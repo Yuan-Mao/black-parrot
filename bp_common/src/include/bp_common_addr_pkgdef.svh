@@ -13,6 +13,7 @@
   localparam cfg_dev_gp   = 2;
   localparam clint_dev_gp = 3;
   localparam cache_dev_gp = 4;
+  localparam eth_dev_gp   = 5;
 
                              // 0x00_0(nnnN)(D)(A_AAAA)
   localparam boot_dev_base_addr_gp     = 32'h0000_0000;

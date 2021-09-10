@@ -29,6 +29,6 @@
     update = none
 [submodule "tools/dromajo"]
 	path = tools/dromajo
-	url = https://github.com/bsg-external/dromajo
+	url = https://github.com/Yuan-Mao/dromajo
     branch = blackparrot_mods
     update = checkout

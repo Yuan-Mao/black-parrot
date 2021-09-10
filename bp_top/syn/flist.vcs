@@ -293,6 +293,23 @@ $BP_TOP_DIR/src/v/bp_unicore.sv
 $BP_TOP_DIR/src/v/bp_unicore_lite.sv
 $BP_TOP_DIR/src/v/bp_tile.sv
 $BP_TOP_DIR/src/v/bp_tile_node.sv
+# Ethernet
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/ethernet_controller.sv
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/axis_adapter.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/axis_async_fifo_adapter.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/axis_async_fifo.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/axis_gmii_rx.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/axis_gmii_tx.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/eth_mac_1g.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/eth_mac_mii_fifo.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/eth_mac_mii.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/lfsr.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/mii_phy_if.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/ssio_sdr_in.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/ethernet_interface.sv
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/to_tx_axis.sv
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/from_rx_axis.sv
+$BP_TOP_DIR/test/tb/bp_tethered/two_chip.sv
 
 # BSG Staging area
 $BP_COMMON_DIR/src/v/bsg_async_noc_link.sv

@@ -369,7 +369,12 @@ module bp_unicore_lite
          );
       wire any_resp_v_li = |{loopback_resp_v_lo, mem_resp_v_i, io_resp_v_i, clint_resp_v_lo, cfg_resp_v_lo};
 
-      assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
+//      assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
+
+      if(i == 2)
+        assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == 2 || resp_selected_payload_li.lce_id == 3);
+	  else
+        assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
     end
   assign cfg_resp_yumi_li      = |proc_resp_yumi_lo & cfg_resp_grant_li;
   assign clint_resp_yumi_li    = |proc_resp_yumi_lo & clint_resp_grant_li;
@@ -385,7 +390,7 @@ module bp_unicore_lite
   wire is_other_hio     = (proc_cmd_selected_lo.header.addr[paddr_width_p-1-:hio_width_p] != 0);
   wire is_cfg_cmd          = local_cmd_li & (device_cmd_li == cfg_dev_gp);
   wire is_clint_cmd        = local_cmd_li & (device_cmd_li == clint_dev_gp);
-  wire is_io_cmd           = (local_cmd_li & (device_cmd_li inside {boot_dev_gp, host_dev_gp})) | is_other_hio;
+  wire is_io_cmd           = (local_cmd_li & (device_cmd_li inside {boot_dev_gp, host_dev_gp, eth_dev_gp})) | is_other_hio;
   wire is_mem_cmd          = (~local_cmd_li & ~is_other_hio) || (local_cmd_li & (device_cmd_li == cache_dev_gp));
   wire is_loopback_cmd     = local_cmd_li & ~is_cfg_cmd & ~is_clint_cmd & ~is_io_cmd & ~is_mem_cmd;
 

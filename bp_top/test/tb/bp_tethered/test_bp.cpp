@@ -2,8 +2,8 @@
 #include <verilated_fst_c.h>
 #include <verilated_cov.h>
 
-#include "Vtestbench.h"
-#include "Vtestbench__Dpi.h"
+#include "Vtwo_chip.h"
+#include "Vtwo_chip__Dpi.h"
 #include "bsg_nonsynth_dpi_clock_gen.hpp"
 using namespace bsg_nonsynth_dpi;
 
@@ -11,10 +11,11 @@ int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
   Verilated::traceEverOn(VM_TRACE_FST);
   Verilated::assertOn(false);
+//Verilated::debug(1);
 
-  Vtestbench *tb = new Vtestbench("testbench");
+  Vtwo_chip *tb = new Vtwo_chip("two_chip");
 
-  svScope g_scope = svGetScopeFromName("testbench");
+  svScope g_scope = svGetScopeFromName("two_chip");
   svSetScope(g_scope);
 
   // Let clock generators register themselves.
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
   wf->open("dump.fst");
 #endif
 
-  while(tb->reset_i == 1) {
+  while(tb->reset_o == 1) {
     bsg_timekeeper::next();
     tb->eval();
     #if VM_TRACE_FST
@@ -40,12 +41,16 @@ int main(int argc, char **argv) {
 
   Verilated::assertOn(true);
 
+  unsigned long cnt = 0;
   while (!Verilated::gotFinish()) {
     bsg_timekeeper::next();
     tb->eval();
     #if VM_TRACE_FST
       wf->dump(sc_time_stamp());
     #endif
+    if((cnt % 4096UL) == 0)
+      std::cout << "Iteration: " << cnt << std::endl;
+    cnt++;
   }
   std::cout << "Finishing test" << std::endl;
 
@@ -54,13 +59,14 @@ int main(int argc, char **argv) {
   VerilatedCov::write("coverage.dat");
 #endif
 
-  std::cout << "Executing final" << std::endl;
-  tb->final();
 
   #if VM_TRACE_FST
     std::cout << "Closing dump file" << std::endl;
     wf->close();
   #endif
+
+  std::cout << "Executing final" << std::endl;
+  tb->final();
 
   std::cout << "Exiting" << std::endl;
   exit(EXIT_SUCCESS);

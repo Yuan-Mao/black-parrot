@@ -47,6 +47,8 @@ module bp_nonsynth_host
    , output logic                            pc_profile_en_o
    , output logic                            branch_profile_en_o
    , output logic                            cosim_en_o
+
+   , input logic                             chip_id_i
    );
 
   import "DPI-C" context function void start();
@@ -62,10 +64,10 @@ module bp_nonsynth_host
     begin
       for (integer j = 0; j < num_core_p; j++)
         begin
-          tmp = $fopen($sformatf("stdout_%0x.txt", j), "w");
+          tmp = $fopen($sformatf("/home/acme/bsg/stdout_%0x_%0x.txt", chip_id_i, j), "w");
           stdout[j] = tmp;
         end
-      stdout_global = $fopen("stdout_global.txt", "w");
+      stdout_global = $fopen($sformatf("/home/acme/bsg/stdout_global_%0x.txt", chip_id_i), "w");
     end
 
   logic do_scan;

@@ -17,9 +17,10 @@ module bp_pma
    , output logic                 uncached_o
    , output logic                 nonidem_o
    );
-
+  localparam eth_buf_base_addr_lp = (40'h8030_0000 >> page_offset_width_gp);
   wire is_local_addr = (ptag_i < (dram_base_addr_gp >> page_offset_width_gp));
   wire is_io_addr    = (ptag_i[ptag_width_p-1-:hio_width_p] != '0);
+  wire is_eth_addr   = (ptag_i == eth_buf_base_addr_lp);
 
   assign uncached_o = ptag_v_i & (is_local_addr | is_io_addr | uncached_mode_i);
   // For now, uncached mode also means non-idempotency. Will reevaluate if we need

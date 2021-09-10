@@ -47,8 +47,20 @@ module testbench
 
    // Synthesis parameters
    , parameter no_bind_p                   = 0
+
+   , parameter nbf_filename_p              = "inv"
    )
-  (output bit reset_i);
+  (
+      input logic        chip_id_i
+    , input logic [3:0]  mii_txd_i
+    , input logic        mii_tx_en_i
+    , input logic        mii_tx_er_i
+    , output logic [3:0] mii_rxd_o
+    , output logic       mii_rx_dv_o
+    , output logic       mii_rx_er_o
+
+    , output bit         reset_o
+  );
 
   import "DPI-C" context function bit get_finish(int hartid);
   export "DPI-C" function get_dram_period;
@@ -67,7 +79,8 @@ module testbench
 // Bit to deal with initial X->0 transition detection
   bit clk_i;
   bit dram_clk_i, dram_reset_i;
-  
+  bit reset_lo;
+  assign reset_o = reset_lo;
   `ifdef VERILATOR
     bsg_nonsynth_dpi_clock_gen
   `else
@@ -84,7 +97,7 @@ module testbench
      )
    reset_gen
     (.clk_i(clk_i)
-     ,.async_reset_o(reset_i)
+     ,.async_reset_o(reset_lo)
      );
   
   `ifdef VERILATOR
@@ -107,7 +120,7 @@ module testbench
      );
 
   bp_bedrock_cce_mem_msg_s proc_io_cmd_lo;
-  logic proc_io_cmd_v_lo, proc_io_cmd_ready_and_li;
+  logic proc_io_cmd_v_lo, proc_io_cmd_ready_li;
   bp_bedrock_cce_mem_msg_s proc_io_resp_li;
   logic proc_io_resp_v_li, proc_io_resp_yumi_lo;
 
@@ -116,10 +129,10 @@ module testbench
   bp_bedrock_cce_mem_msg_s io_resp_li;
   logic io_resp_v_li, io_resp_yumi_lo;
 
-  bp_bedrock_cce_mem_msg_s load_cmd_lo;
-  logic load_cmd_v_lo, load_cmd_yumi_li;
-  bp_bedrock_cce_mem_msg_s load_resp_li;
-  logic load_resp_v_li, load_resp_ready_and_lo;
+  bp_bedrock_cce_mem_msg_s load_cmd_li;
+  logic load_cmd_v_li, load_cmd_yumi_lo;
+  bp_bedrock_cce_mem_msg_s load_resp_lo;
+  logic load_resp_v_lo, load_resp_ready_li;
 
   `declare_bsg_cache_dma_pkt_s(caddr_width_p);
   bsg_cache_dma_pkt_s [num_cce_p-1:0] dma_pkt_lo;
@@ -132,23 +145,23 @@ module testbench
    #(.bp_params_p(bp_params_p))
    wrapper
     (.clk_i(clk_i)
-     ,.reset_i(reset_i)
+     ,.reset_i(reset_lo)
 
      ,.io_cmd_o(proc_io_cmd_lo)
      ,.io_cmd_v_o(proc_io_cmd_v_lo)
-     ,.io_cmd_ready_and_i(proc_io_cmd_ready_and_li)
+     ,.io_cmd_ready_and_i(proc_io_cmd_ready_li)
 
      ,.io_resp_i(proc_io_resp_li)
      ,.io_resp_v_i(proc_io_resp_v_li)
      ,.io_resp_yumi_o(proc_io_resp_yumi_lo)
 
-     ,.io_cmd_i(load_cmd_lo)
-     ,.io_cmd_v_i(load_cmd_v_lo)
-     ,.io_cmd_yumi_o(load_cmd_yumi_li)
+     ,.io_cmd_i(load_cmd_li)
+     ,.io_cmd_v_i(load_cmd_v_li)
+     ,.io_cmd_yumi_o(load_cmd_yumi_lo)
 
-     ,.io_resp_o(load_resp_li)
-     ,.io_resp_v_o(load_resp_v_li)
-     ,.io_resp_ready_and_i(load_resp_ready_and_lo)
+     ,.io_resp_o(load_resp_lo)
+     ,.io_resp_v_o(load_resp_v_lo)
+     ,.io_resp_ready_and_i(load_resp_ready_li)
 
      ,.dma_pkt_o(dma_pkt_lo)
      ,.dma_pkt_v_o(dma_pkt_v_lo)
@@ -172,7 +185,7 @@ module testbench
      )
    dram
     (.clk_i(clk_i)
-     ,.reset_i(reset_i)
+     ,.reset_i(reset_lo)
 
      ,.dma_pkt_i(dma_pkt_lo)
      ,.dma_pkt_v_i(dma_pkt_v_lo)
@@ -190,25 +203,131 @@ module testbench
      ,.dram_reset_i(dram_reset_i)
      );
 
+  bp_bedrock_cce_mem_msg_s nbf_io_cmd_lo;
+  logic nbf_io_cmd_v_lo;
+  logic nbf_io_cmd_yumi_li;
+  bp_bedrock_cce_mem_msg_s nbf_io_resp_li;
+  logic nbf_io_resp_v_li;
+  logic nbf_io_resp_ready_lo;
+
+
   bp_nonsynth_nbf_loader
-   #(.bp_params_p(bp_params_p))
+   #(.bp_params_p(bp_params_p)
+    ,.nbf_filename_p(nbf_filename_p))
    nbf_loader
     (.clk_i(clk_i)
-     ,.reset_i(reset_i)
+     ,.reset_i(reset_lo)
 
      ,.lce_id_i(lce_id_width_p'('b10))
 
-     ,.io_cmd_o(load_cmd_lo)
-     ,.io_cmd_v_o(load_cmd_v_lo)
-     ,.io_cmd_yumi_i(load_cmd_yumi_li)
+     ,.io_cmd_o(nbf_io_cmd_lo)
+     ,.io_cmd_v_o(nbf_io_cmd_v_lo)
+     ,.io_cmd_yumi_i(nbf_io_cmd_yumi_li)
 
      // NOTE: IO response ready_o is always high - acts as sink
-     ,.io_resp_i(load_resp_li)
-     ,.io_resp_v_i(load_resp_v_li)
-     ,.io_resp_ready_and_o(load_resp_ready_and_lo)
+     ,.io_resp_i(nbf_io_resp_li)
+     ,.io_resp_v_i(nbf_io_resp_v_li)
+     ,.io_resp_ready_and_o(nbf_io_resp_ready_lo)
 
      ,.done_o()
      );
+
+  `declare_bp_memory_map(paddr_width_p, caddr_width_p);
+  bp_bedrock_cce_mem_msg_s eth_io_resp_lo, host_io_resp_lo;
+
+  bp_local_addr_s io_cmd_local_addr_cast;
+  bp_bedrock_cce_mem_msg_s eth_io_cmd_li, host_io_cmd_li;
+  bp_bedrock_cce_mem_msg_s eth_io_cmd_lo;
+  assign eth_io_cmd_li  = proc_io_cmd_lo;
+  assign host_io_cmd_li = proc_io_cmd_lo;
+  assign io_cmd_local_addr_cast = proc_io_cmd_lo.header.addr;
+  wire [dev_id_width_gp-1:0] device_cmd_li = io_cmd_local_addr_cast.dev;
+  wire local_cmd_li = (proc_io_cmd_lo.header.addr < dram_base_addr_gp);
+  wire is_eth_cmd   = local_cmd_li & (device_cmd_li == eth_dev_gp);
+
+
+  bp_bedrock_cce_mem_payload_s io_resp_payload;
+  assign io_resp_payload = load_resp_lo.header.payload;
+  wire is_eth_resp = (io_resp_payload.lce_id == 3);
+
+  logic host_io_cmd_v_li, eth_io_cmd_v_li;
+  logic host_io_cmd_ready_lo, eth_io_cmd_ready_lo;
+  logic host_io_resp_v_lo, eth_io_resp_v_lo;
+  logic host_io_resp_yumi_li, eth_io_resp_ready_li;
+  logic eth_io_cmd_v_lo, eth_io_cmd_yumi_li;
+
+  bp_bedrock_cce_mem_msg_s eth_io_resp_li;
+  logic eth_io_resp_ready_lo;
+
+  assign proc_io_cmd_ready_li = eth_io_cmd_ready_lo & host_io_cmd_ready_lo;
+  assign host_io_cmd_v_li     = proc_io_cmd_v_lo & ~is_eth_cmd;
+  assign eth_io_cmd_v_li      = proc_io_cmd_v_lo &  is_eth_cmd;
+
+  assign proc_io_resp_v_li    = host_io_resp_v_lo | eth_io_resp_v_lo;
+  assign proc_io_resp_li      = host_io_resp_v_lo ? host_io_resp_lo : eth_io_resp_lo;
+  assign host_io_resp_yumi_li = host_io_resp_v_lo ? proc_io_resp_yumi_lo : 1'b0;
+  assign eth_io_resp_ready_li = host_io_resp_v_lo ? 1'b0 : proc_io_resp_yumi_lo;
+
+  assign load_cmd_v_li        = nbf_io_cmd_v_lo | eth_io_cmd_v_lo;
+  assign load_cmd_li          = nbf_io_cmd_v_lo ? nbf_io_cmd_lo : eth_io_cmd_lo;
+  assign nbf_io_cmd_yumi_li   = nbf_io_cmd_v_lo ? load_cmd_yumi_lo : 1'b0;
+  assign eth_io_cmd_yumi_li   = nbf_io_cmd_v_lo ? 1'b0 : load_cmd_yumi_lo;
+
+  assign load_resp_ready_li   = nbf_io_resp_ready_lo & eth_io_resp_ready_lo;
+  assign nbf_io_resp_v_li     = load_resp_v_lo & ~is_eth_resp;
+  assign eth_io_resp_v_li     = load_resp_v_lo &  is_eth_resp;
+  assign eth_io_resp_li       = load_resp_lo;
+  assign nbf_io_resp_li       = load_resp_lo;
+
+  ethernet_controller ethernet_controller
+  (.clk_i(clk_i)
+   ,.reset_i(reset_lo)
+   ,.lce_id_i(lce_id_width_p'('b11))
+
+   ,.io_cmd_i(eth_io_cmd_li)
+   ,.io_cmd_v_i(eth_io_cmd_v_li)
+   ,.io_cmd_ready_o(eth_io_cmd_ready_lo)
+   ,.io_resp_o(eth_io_resp_lo)
+   ,.io_resp_v_o(eth_io_resp_v_lo)
+   ,.io_resp_ready_i(eth_io_resp_ready_li)
+
+   ,.io_cmd_o(eth_io_cmd_lo)
+   ,.io_cmd_v_o(eth_io_cmd_v_lo)
+   ,.io_cmd_yumi_i(eth_io_cmd_yumi_li)
+   ,.io_resp_i(eth_io_resp_li)
+   ,.io_resp_v_i(eth_io_resp_v_li)
+   ,.io_resp_ready_o(eth_io_resp_ready_lo)
+
+   ,.mii_rx_clk_i(clk_i)
+   ,.mii_rxd_i(mii_txd_i)
+   ,.mii_rx_dv_i(mii_tx_en_i)
+   ,.mii_rx_er_i(mii_tx_er_i)
+   ,.mii_tx_clk_i(clk_i)
+   ,.mii_txd_o(mii_rxd_o)
+   ,.mii_tx_en_o(mii_rx_dv_o)
+   ,.mii_tx_er_o(mii_rx_er_o)
+   );
+
+/*  nonsynth_ethernet_sender nonsynth_ethernet_sender
+  (.clk_i(clk_i)
+   ,.reset_i(reset_lo)
+   ,.send_i(1'b1)
+   ,.pause_i(1'b0)
+   ,.mii_txd_o(sender_mii_txd)
+   ,.mii_tx_en_o(sender_mii_tx_en)
+   ,.mii_tx_er_o(sender_mii_tx_er)
+  );
+
+  nonsynth_ethernet_receiver nonsynth_ethernet_receiver
+  (.clk_i(clk_i)
+   ,.reset_i(reset_lo)
+   ,.mii_rxd_i(receiver_mii_rxd)
+   ,.mii_rx_dv_i(receiver_mii_rx_dv)
+   ,.mii_rx_er_i(receiver_mii_rx_er)
+   ,.clear_buffer_i(1'b0)
+  );*/
+
+
 
   logic cosim_en_lo;
   logic icache_trace_en_lo;
@@ -237,15 +356,15 @@ module testbench
      )
    host
     (.clk_i(clk_i)
-     ,.reset_i(reset_i)
+     ,.reset_i(reset_lo)
 
-     ,.io_cmd_i(proc_io_cmd_lo)
-     ,.io_cmd_v_i(proc_io_cmd_v_lo)
-     ,.io_cmd_ready_and_o(proc_io_cmd_ready_and_li)
+     ,.io_cmd_i(host_io_cmd_li)
+     ,.io_cmd_v_i(host_io_cmd_v_li)
+     ,.io_cmd_ready_and_o(host_io_cmd_ready_lo)
 
-     ,.io_resp_o(proc_io_resp_li)
-     ,.io_resp_v_o(proc_io_resp_v_li)
-     ,.io_resp_yumi_i(proc_io_resp_yumi_lo)
+     ,.io_resp_o(host_io_resp_lo)
+     ,.io_resp_v_o(host_io_resp_v_lo)
+     ,.io_resp_yumi_i(host_io_resp_yumi_li)
 
      ,.icache_trace_en_o(icache_trace_en_lo)
      ,.dcache_trace_en_o(dcache_trace_en_lo)
@@ -258,6 +377,8 @@ module testbench
      ,.branch_profile_en_o(branch_profile_en_lo)
      ,.pc_profile_en_o(pc_profile_en_lo)
      ,.cosim_en_o(cosim_en_lo)
+
+     ,.chip_id_i(chip_id_i)
      );
 
   if (no_bind_p == 0)
@@ -267,7 +388,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          perf
           (.clk_i(clk_i)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
            ,.warmup_instr_i(testbench.warmup_instr_p)
 
@@ -285,7 +406,7 @@ module testbench
            )
          watchdog
           (.clk_i(clk_i)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
            ,.wfi_i(director.is_wait)
 
@@ -301,7 +422,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          cosim
           (.clk_i(clk_i)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
 
            // We want to pass these values as parameters, but cannot in Verilator 4.025
@@ -345,7 +466,7 @@ module testbench
           ,.trace_file_p("dcache"))
          dcache_tracer
           (.clk_i(clk_i & testbench.dcache_trace_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(cfg_bus_cast_i.freeze)
 
            ,.mhartid_i(cfg_bus_cast_i.core_id)
@@ -397,7 +518,7 @@ module testbench
           ,.trace_file_p("icache"))
          icache_tracer
           (.clk_i(clk_i & testbench.icache_trace_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
 
            ,.freeze_i(cfg_bus_cast_i.freeze)
            ,.mhartid_i(cfg_bus_cast_i.core_id)
@@ -444,7 +565,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          vm_tracer
           (.clk_i(clk_i & testbench.vm_trace_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
 
            ,.mhartid_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
@@ -469,7 +590,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          core_profiler
           (.clk_i(clk_i & testbench.core_profile_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
 
            ,.mhartid_i(be.calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
@@ -521,7 +642,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          pc_profiler
           (.clk_i(clk_i & testbench.pc_profile_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(calculator.pipe_sys.csr.cfg_bus_cast_i.freeze)
 
            ,.mhartid_i(calculator.pipe_sys.csr.cfg_bus_cast_i.core_id)
@@ -534,7 +655,7 @@ module testbench
          #(.bp_params_p(bp_params_p))
          branch_profiler
           (.clk_i(clk_i & testbench.branch_profile_en_lo)
-           ,.reset_i(reset_i)
+           ,.reset_i(reset_lo)
            ,.freeze_i(detector.cfg_bus_cast_i.freeze)
 
            ,.mhartid_i(detector.cfg_bus_cast_i.core_id)
@@ -552,7 +673,7 @@ module testbench
              #(.bp_params_p(bp_params_p))
              cce_tracer
               (.clk_i(clk_i & testbench.cce_trace_en_lo)
-              ,.reset_i(reset_i)
+              ,.reset_i(reset_lo)
               ,.freeze_i(cfg_bus_cast_i.freeze)
 
               ,.cce_id_i(cfg_bus_cast_i.cce_id)
@@ -590,7 +711,7 @@ module testbench
                 )
               lce_tracer
               (.clk_i(clk_i & testbench.lce_trace_en_lo)
-              ,.reset_i(reset_i)
+              ,.reset_i(reset_lo)
               ,.lce_id_i(lce_id_i)
               ,.lce_req_i(lce_req_o)
               ,.lce_req_v_i(lce_req_v_o)
@@ -618,7 +739,7 @@ module testbench
       begin      
         $assertoff();
         @(posedge clk_i);
-        @(negedge reset_i);
+        @(negedge reset_lo);
         $asserton();
       end
   `endif
