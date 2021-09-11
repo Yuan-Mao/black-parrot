@@ -137,7 +137,6 @@ module from_rx_axis
 
   logic [15:0] rx_recv_cnt_r, rx_beat_byte_cnt;
   logic [reg_addr_width_p - 1:0] rx_recv_offset_r;
-  logic [3:0] rx_head_offset_r;
 
   always_ff @(posedge clk_i) begin
     if(reset_i) begin
@@ -156,54 +155,24 @@ module from_rx_axis
     end
   end
 
-  always_ff @(posedge clk_i) begin
-    if(rx_beat_sent && (rx_recv_cnt_r == '0)) begin
-      case(rx_axis_tkeep_i)
-        8'b1111_1111:
-          rx_head_offset_r <= 4'h0;
-        8'b1111_1110:
-          rx_head_offset_r <= 4'h1;
-        8'b1111_1100:
-          rx_head_offset_r <= 4'h2;
-        8'b1111_1000:
-          rx_head_offset_r <= 4'h3;
-        8'b1111_0000:
-          rx_head_offset_r <= 4'h4;
-        8'b1110_0000:
-          rx_head_offset_r <= 4'h5;
-        8'b1100_0000:
-          rx_head_offset_r <= 4'h6;
-        8'b1000_0000:
-          rx_head_offset_r <= 4'h7;
-      endcase
-    end
-  end
-
   always_comb begin
     rx_beat_byte_cnt = '1;
     case(rx_axis_tkeep_i)
       8'b1111_1111:
         rx_beat_byte_cnt = 16'h8;
-      8'b0111_1111,
-      8'b1111_1110:
+      8'b0111_1111:
         rx_beat_byte_cnt = 16'h7;
-      8'b0011_1111,
-      8'b1111_1100:
+      8'b0011_1111:
         rx_beat_byte_cnt = 16'h6;
-      8'b0001_1111,
-      8'b1111_1000:
+      8'b0001_1111:
         rx_beat_byte_cnt = 16'h5;
-      8'b0000_1111,
-      8'b1111_0000:
+      8'b0000_1111:
         rx_beat_byte_cnt = 16'h4;
-      8'b0000_0111,
-      8'b1110_0000:
+      8'b0000_0111:
         rx_beat_byte_cnt = 16'h3;
-      8'b0000_0011,
-      8'b1100_0000:
+      8'b0000_0011:
         rx_beat_byte_cnt = 16'h2;
-      8'b0000_0001,
-      8'b1000_0000:
+      8'b0000_0001:
         rx_beat_byte_cnt = 16'h1;
     endcase
   end
@@ -224,7 +193,7 @@ module from_rx_axis
       io_cmd_lo.header.size = e_bedrock_msg_size_8;
     end
     else begin
-      io_cmd_lo.data = {rx_head_offset_r, rx_recv_cnt_r};
+      io_cmd_lo.data = {rx_recv_cnt_r};
       io_cmd_lo_payload = '0;
       io_cmd_lo_payload.lce_id = lce_id_i;
       io_cmd_lo.header.payload = io_cmd_lo_payload;

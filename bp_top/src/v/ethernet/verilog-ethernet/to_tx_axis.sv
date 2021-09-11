@@ -36,14 +36,17 @@ module to_tx_axis
   logic frame_data_yumi;
 
   logic [15:0] tx_packet_size_r;
-  logic [3:0]  tx_head_offset_r;
+  logic [$clog2(axis_data_width_p/8) - 1:0]  tx_head_offset_r;
   logic [15:0] tx_ptr_r;
   logic [15:0] tx_ptr_end;
-  logic [axis_data_width_p/8-1:0] tx_data_remainder;
+  logic [15:0] tx_packet_size_with_padding;
+  logic [$clog2(axis_data_width_p/8) - 1:0] tx_data_remainder;
   logic tx_first_beat;
 
-  assign tx_data_remainder = tx_packet_size_r[$clog2(axis_data_width_p/8) - 1:0];
-  assign tx_ptr_end = (tx_packet_size_r - 1) >> $clog2(axis_data_width_p/8);
+  assign tx_packet_size_with_padding = tx_packet_size_r + 16'(tx_head_offset_r);
+  assign tx_data_remainder = tx_packet_size_with_padding[$clog2(axis_data_width_p/8) - 1:0];
+
+  assign tx_ptr_end = (tx_packet_size_with_padding - 1) >> $clog2(axis_data_width_p/8);
   assign tx_axis_tlast_o = (tx_ptr_r == tx_ptr_end);
   assign tx_first_beat   = (tx_ptr_r == '0);
 
@@ -72,22 +75,22 @@ module to_tx_axis
     else begin
       if(tx_first_beat) begin
         case(tx_head_offset_r)
-          4'h0:
+          3'h0:
             tx_axis_tkeep_o = 8'b1111_1111;
-          4'h1:
-            tx_axis_tkeep_o = 8'b1111_1110;
-          4'h2:
-            tx_axis_tkeep_o = 8'b1111_1100;
-          4'h3:
-            tx_axis_tkeep_o = 8'b1111_1000;
-          4'h4:
-            tx_axis_tkeep_o = 8'b1111_0000;
-          4'h5:
-            tx_axis_tkeep_o = 8'b1110_0000;
-          4'h6:
-            tx_axis_tkeep_o = 8'b1100_0000;
-          4'h7:
-            tx_axis_tkeep_o = 8'b1000_0000;
+          3'h1:
+            tx_axis_tkeep_o = 8'b0111_1111;
+          3'h2:
+            tx_axis_tkeep_o = 8'b0011_1111;
+          3'h3:
+            tx_axis_tkeep_o = 8'b0001_1111;
+          3'h4:
+            tx_axis_tkeep_o = 8'b0000_1111;
+          3'h5:
+            tx_axis_tkeep_o = 8'b0000_0111;
+          3'h6:
+            tx_axis_tkeep_o = 8'b0000_0011;
+          3'h7:
+            tx_axis_tkeep_o = 8'b0000_0001;
         endcase
       end
       else
@@ -104,7 +107,7 @@ module to_tx_axis
     if(tx_state_r == ETH_TX_STATE_SIZE) begin
       if(frame_data_yumi) begin
         tx_packet_size_r <= frame_data_i[15:0];
-        tx_head_offset_r <= frame_data_i[19:16];
+        tx_head_offset_r <= frame_data_i[18:16];
       end
     end
   end

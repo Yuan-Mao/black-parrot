@@ -25,13 +25,10 @@ void ethernet_set_recv_addr(unsigned long addr)
 // buf cannot overlap with ethernet_buffer
 int ethernet_recv(void *buf, unsigned *size)
 {
-    unsigned size_offset, offset;
     unsigned long status = *cmd1;
     if((status & 3UL) == 2UL) {
-        size_offset = *(unsigned *)ethernet_buffer;
-        *size = size_offset & ((1U << 16) - 1);
-        offset = size_offset >> 16;
-        memcpy(buf, ethernet_buffer + 8 + offset, *size);
+        *size = *(unsigned *)ethernet_buffer;
+        memcpy(buf, ethernet_buffer + 8, *size);
         *cmd1 = (1UL << 62); // ACK
         return 0;
     }
@@ -49,7 +46,7 @@ int ethernet_send(void *buf, unsigned size)
     *cmd2 = (offset << 16) | (size & ((1U << 16) - 1));
 
     partial = 0;
-    memcpy((void *)&partial + offset, buf, 8 - offset);
+    memcpy((void *)&partial, buf, 8 - offset);
     // first beat
     *cmd2 = partial;
 
@@ -76,7 +73,7 @@ int ethernet_send(void *buf, unsigned size)
 int main()
 {
     int ret;
-    const int offset = 0;
+    const int offset = 6;
     printf("test2 start\n");
     ethernet_set_recv_addr(ethernet_buffer);
     // wait for packet
