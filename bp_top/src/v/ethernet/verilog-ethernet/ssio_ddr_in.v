@@ -27,17 +27,20 @@ THE SOFTWARE.
 `timescale 1ns / 1ps
 
 /*
- * Generic source synchronous SDR input
+ * Generic source synchronous DDR input
  */
-module ssio_sdr_in #
+module ssio_ddr_in #
 (
     // target ("SIM", "GENERIC", "XILINX", "ALTERA")
     parameter TARGET = "GENERIC",
+    // IODDR style ("IODDR", "IODDR2")
+    // Use IODDR for Virtex-4, Virtex-5, Virtex-6, 7 Series, Ultrascale
+    // Use IODDR2 for Spartan-6
+    parameter IODDR_STYLE = "IODDR2",
     // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")
-    // Use BUFR for Virtex-5, Virtex-6, 7-series
-    // Use BUFG for Ultrascale
-    // Use BUFIO2 for Spartan-6
-    parameter CLOCK_INPUT_STYLE = "BUFIO2",
+    // Use BUFR for Virtex-6, 7-series
+    // Use BUFG for Virtex-5, Spartan-6, Ultrascale
+    parameter CLOCK_INPUT_STYLE = "BUFG",
     // Width of register in bits
     parameter WIDTH = 1
 )
@@ -48,7 +51,8 @@ module ssio_sdr_in #
 
     output wire             output_clk,
 
-    output wire [WIDTH-1:0] output_q
+    output wire [WIDTH-1:0] output_q1,
+    output wire [WIDTH-1:0] output_q2
 );
 
 wire clk_int;
@@ -113,30 +117,6 @@ if (TARGET == "XILINX") begin
             .O(output_clk)
         );
 
-    end else if (CLOCK_INPUT_STYLE == "BUFIO2") begin
-/* verilator lint_off PINCONNECTEMPTY */
-        // pass through RX clock to input buffers
-        BUFIO2 #(
-            .DIVIDE(1),
-            .DIVIDE_BYPASS("TRUE"),
-            .I_INVERT("FALSE"),
-            .USE_DOUBLER("FALSE")
-        )
-        clk_bufio (
-            .I(input_clk),
-            .DIVCLK(clk_int),
-            .IOCLK(clk_io),
-            .SERDESSTROBE()
-        );
-/* verilator lint_on PINCONNECTEMPTY */
-
-        // pass through RX clock to MAC
-        BUFG
-        clk_bufg (
-            .I(clk_int),
-            .O(output_clk)
-        );
-
     end
 
 end else begin
@@ -152,13 +132,16 @@ end
 
 endgenerate
 
-(* IOB = "TRUE" *)
-reg [WIDTH-1:0] output_q_reg = {WIDTH{1'b0}};
-
-assign output_q = output_q_reg;
-
-always @(posedge clk_io) begin
-    output_q_reg <= input_d;
-end
+iddr #(
+    .TARGET(TARGET),
+    .IODDR_STYLE(IODDR_STYLE),
+    .WIDTH(WIDTH)
+)
+data_iddr_inst (
+    .clk(clk_io),
+    .d(input_d),
+    .q1(output_q1),
+    .q2(output_q2)
+);
 
 endmodule

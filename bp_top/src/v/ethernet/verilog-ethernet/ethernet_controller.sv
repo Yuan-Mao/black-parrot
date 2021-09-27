@@ -31,15 +31,15 @@ module ethernet_controller
     , input                                          io_resp_v_i
     , output logic                                   io_resp_ready_o
 
-    /* MII interface */
-    , input  logic                                   mii_rx_clk_i
-    , input  logic [3:0]                             mii_rxd_i
-    , input  logic                                   mii_rx_dv_i
-    , input  logic                                   mii_rx_er_i
-    , input  logic                                   mii_tx_clk_i
-    , output logic [3:0]                             mii_txd_o
-    , output logic                                   mii_tx_en_o
-    , output logic                                   mii_tx_er_o
+    /* RGMII interface */
+    , input  logic                                   rgmii_rx_clk_i
+    , input  logic [3:0]                             rgmii_rxd_i
+    , input  logic                                   rgmii_rx_ctl_i
+    , output logic                                   rgmii_tx_clk_o
+    , output logic [3:0]                             rgmii_txd_o
+    , output logic                                   rgmii_tx_ctl_o
+
+    , input logic                                    clk90_i
 );
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
@@ -200,11 +200,23 @@ module ethernet_controller
       ,.tx_axis_tuser_o(tx_axis_tuser_li)
     );
 
-  eth_mac_mii_fifo #(
+  // timing:
+  // AXIS from bp clock domain -> ASYNC_FIFO -> AXIS from MAC clock domain (125MHZ)
+  //      -> GMII -> module rgmii_phy_if -> RGMII -> PHY
+  // There are 3 clock domains:
+  //    1. BP 2. MAC 3. RGMII RX clock from PHY
+
+  eth_mac_1g_rgmii_fifo #(
             .AXIS_DATA_WIDTH(axis_data_width_lp)
-            ) eth_mac_mii_fifo
+            ) eth_mac_1g_rgmii_fifo
     (
-        .rst(reset_i)
+        // gtx_clk: 125MHZ; gtx_clk90: 90-degree phase shift
+        // gtx_rst should be sync with gtx_clk
+        // logic_clk: bp clock
+        // logic_rst should be sync with logic_clk
+        .gtx_clk(clk_i)
+        ,.gtx_clk90(clk90_i)
+        ,.gtx_rst(reset_i)
         ,.logic_clk(clk_i)
         ,.logic_rst(reset_i) // difference between rst ?
 
@@ -224,14 +236,12 @@ module ethernet_controller
         ,.rx_axis_tlast(rx_axis_tlast_lo)
         ,.rx_axis_tuser(rx_axis_tuser_lo)
 
-        ,.mii_rx_clk(mii_rx_clk_i) // 25 MHZ
-        ,.mii_rxd(mii_rxd_i)
-        ,.mii_rx_dv(mii_rx_dv_i)
-        ,.mii_rx_er(mii_rx_er_i)
-        ,.mii_tx_clk(mii_tx_clk_i) // 25 MHZ
-        ,.mii_txd(mii_txd_o)
-        ,.mii_tx_en(mii_tx_en_o)
-        ,.mii_tx_er(mii_tx_er_o)
+        ,.rgmii_rx_clk(rgmii_rx_clk_i) // 25 MHZ
+        ,.rgmii_rxd(rgmii_rxd_i)
+        ,.rgmii_rx_ctl(rgmii_rx_ctl_i)
+        ,.rgmii_tx_clk(rgmii_tx_clk_o) // 25 MHZ
+        ,.rgmii_txd(rgmii_txd_o)
+        ,.rgmii_tx_ctl(rgmii_tx_ctl_o)
 
         ,.tx_error_underflow(/* UNUSED */)
         ,.tx_fifo_overflow(/* UNUSED */)

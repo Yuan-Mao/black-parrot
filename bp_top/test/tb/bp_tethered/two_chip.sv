@@ -37,12 +37,13 @@ module two_chip
      output bit reset_o
    );
 
-    logic [3:0] tb1_mii_txd_li;
-    logic       tb1_mii_tx_en_li;
-    logic       tb1_mii_tx_er_li;
-    logic [3:0] tb2_mii_txd_li;
-    logic       tb2_mii_tx_en_li;
-    logic       tb2_mii_tx_er_li;
+    logic       tb1_rgmii_tx_clk_lo;
+    logic [3:0] tb1_rgmii_txd_lo;
+    logic       tb1_rgmii_tx_ctl_lo;
+
+    logic       tb2_rgmii_tx_clk_lo;
+    logic [3:0] tb2_rgmii_txd_lo;
+    logic       tb2_rgmii_tx_ctl_lo;
 
     testbench
     #(
@@ -73,12 +74,13 @@ module two_chip
     ) tb1
     (
         .chip_id_i(1'b0)
-        ,.mii_txd_i(tb1_mii_txd_li)
-        ,.mii_tx_en_i(tb1_mii_tx_en_li)
-        ,.mii_tx_er_i(tb1_mii_tx_er_li)
-        ,.mii_rxd_o(tb2_mii_txd_li)
-        ,.mii_rx_dv_o(tb2_mii_tx_en_li)
-        ,.mii_rx_er_o(tb2_mii_tx_er_li)
+        ,.rgmii_tx_clk_o(tb1_rgmii_tx_clk_lo)
+        ,.rgmii_txd_o(tb1_rgmii_txd_lo)
+        ,.rgmii_tx_ctl_o(tb1_rgmii_tx_ctl_lo)
+
+        ,.rgmii_rx_clk_i(tb2_rgmii_tx_clk_lo)
+        ,.rgmii_rxd_i(tb2_rgmii_txd_lo)
+        ,.rgmii_rx_ctl_i(tb2_rgmii_tx_ctl_lo)
 
         ,.reset_o(reset_o)
     );
@@ -112,12 +114,13 @@ module two_chip
     ) tb2
     (
         .chip_id_i(1'b1)
-        ,.mii_txd_i(tb2_mii_txd_li)
-        ,.mii_tx_en_i(tb2_mii_tx_en_li)
-        ,.mii_tx_er_i(tb2_mii_tx_er_li)
-        ,.mii_rxd_o(tb1_mii_txd_li)
-        ,.mii_rx_dv_o(tb1_mii_tx_en_li)
-        ,.mii_rx_er_o(tb1_mii_tx_er_li)
+        ,.rgmii_tx_clk_o(tb2_rgmii_tx_clk_lo)
+        ,.rgmii_txd_o(tb2_rgmii_txd_lo)
+        ,.rgmii_tx_ctl_o(tb2_rgmii_tx_ctl_lo)
+
+        ,.rgmii_rx_clk_i(tb1_rgmii_tx_clk_lo)
+        ,.rgmii_rxd_i(tb1_rgmii_txd_lo)
+        ,.rgmii_rx_ctl_i(tb1_rgmii_tx_ctl_lo)
 
         ,.reset_o(/* UNUSED */)
     );

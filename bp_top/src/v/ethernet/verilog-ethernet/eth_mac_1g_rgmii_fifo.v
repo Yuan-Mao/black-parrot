@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2019 Alex Forencich
+Copyright (c) 2015-2018 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,17 +27,22 @@ THE SOFTWARE.
 `timescale 1ns / 1ps
 
 /*
- * 10M/100M Ethernet MAC with MII interface and TX and RX FIFOs
+ * 1G Ethernet MAC with RGMII interface and TX and RX FIFOs
  */
-module eth_mac_mii_fifo #
+module eth_mac_1g_rgmii_fifo #
 (
     // target ("SIM", "GENERIC", "XILINX", "ALTERA")
     parameter TARGET = "GENERIC",
+    // IODDR style ("IODDR", "IODDR2")
+    // Use IODDR for Virtex-4, Virtex-5, Virtex-6, 7 Series, Ultrascale
+    // Use IODDR2 for Spartan-6
+    parameter IODDR_STYLE = "IODDR2",
     // Clock input style ("BUFG", "BUFR", "BUFIO", "BUFIO2")
-    // Use BUFR for Virtex-5, Virtex-6, 7-series
-    // Use BUFG for Ultrascale
-    // Use BUFIO2 for Spartan-6
-    parameter CLOCK_INPUT_STYLE = "BUFIO2",
+    // Use BUFR for Virtex-6, 7-series
+    // Use BUFG for Virtex-5, Spartan-6, Ultrascale
+    parameter CLOCK_INPUT_STYLE = "BUFG",
+    // Use 90 degree clock for RGMII transmit ("TRUE", "FALSE")
+    parameter USE_CLK90 = "TRUE",
     parameter AXIS_DATA_WIDTH = 8,
     parameter AXIS_KEEP_ENABLE = (AXIS_DATA_WIDTH>8),
     parameter AXIS_KEEP_WIDTH = (AXIS_DATA_WIDTH/8),
@@ -55,7 +60,9 @@ module eth_mac_mii_fifo #
     parameter RX_DROP_WHEN_FULL = RX_FRAME_FIFO
 )
 (
-    input  wire                       rst,
+    input  wire                       gtx_clk,
+    input  wire                       gtx_clk90,
+    input  wire                       gtx_rst,
     input  wire                       logic_clk,
     input  wire                       logic_rst,
 
@@ -80,16 +87,14 @@ module eth_mac_mii_fifo #
     output wire                       rx_axis_tuser,
 
     /*
-     * MII interface
+     * RGMII interface
      */
-    input  wire                       mii_rx_clk,
-    input  wire [3:0]                 mii_rxd,
-    input  wire                       mii_rx_dv,
-    input  wire                       mii_rx_er,
-    input  wire                       mii_tx_clk,
-    output wire [3:0]                 mii_txd,
-    output wire                       mii_tx_en,
-    output wire                       mii_tx_er,
+    input  wire                       rgmii_rx_clk,
+    input  wire [3:0]                 rgmii_rxd,
+    input  wire                       rgmii_rx_ctl,
+    output wire                       rgmii_tx_clk,
+    output wire [3:0]                 rgmii_txd,
+    output wire                       rgmii_tx_ctl,
 
     /*
      * Status
@@ -103,6 +108,7 @@ module eth_mac_mii_fifo #
     output wire                       rx_fifo_overflow,
     output wire                       rx_fifo_bad_frame,
     output wire                       rx_fifo_good_frame,
+    output wire [1:0]                 speed,
 
     /*
      * Configuration
@@ -187,14 +193,30 @@ always @(posedge logic_clk or posedge logic_rst) begin
     end
 end
 
-eth_mac_mii #(
+wire [1:0] speed_int;
+
+reg [1:0] speed_sync_reg_1 = 2'b10;
+reg [1:0] speed_sync_reg_2 = 2'b10;
+
+assign speed = speed_sync_reg_2;
+
+always @(posedge logic_clk) begin
+    speed_sync_reg_1 <= speed_int;
+    speed_sync_reg_2 <= speed_sync_reg_1;
+end
+
+eth_mac_1g_rgmii #(
     .TARGET(TARGET),
+    .IODDR_STYLE(IODDR_STYLE),
     .CLOCK_INPUT_STYLE(CLOCK_INPUT_STYLE),
+    .USE_CLK90(USE_CLK90),
     .ENABLE_PADDING(ENABLE_PADDING),
     .MIN_FRAME_LENGTH(MIN_FRAME_LENGTH)
 )
-eth_mac_1g_mii_inst (
-    .rst(rst),
+eth_mac_1g_rgmii_inst (
+    .gtx_clk(gtx_clk),
+    .gtx_clk90(gtx_clk90),
+    .gtx_rst(gtx_rst),
     .tx_clk(tx_clk),
     .tx_rst(tx_rst),
     .rx_clk(rx_clk),
@@ -208,17 +230,16 @@ eth_mac_1g_mii_inst (
     .rx_axis_tvalid(rx_fifo_axis_tvalid),
     .rx_axis_tlast(rx_fifo_axis_tlast),
     .rx_axis_tuser(rx_fifo_axis_tuser),
-    .mii_rx_clk(mii_rx_clk),
-    .mii_rxd(mii_rxd),
-    .mii_rx_dv(mii_rx_dv),
-    .mii_rx_er(mii_rx_er),
-    .mii_tx_clk(mii_tx_clk),
-    .mii_txd(mii_txd),
-    .mii_tx_en(mii_tx_en),
-    .mii_tx_er(mii_tx_er),
+    .rgmii_rx_clk(rgmii_rx_clk),
+    .rgmii_rxd(rgmii_rxd),
+    .rgmii_rx_ctl(rgmii_rx_ctl),
+    .rgmii_tx_clk(rgmii_tx_clk),
+    .rgmii_txd(rgmii_txd),
+    .rgmii_tx_ctl(rgmii_tx_ctl),
     .tx_error_underflow(tx_error_underflow_int),
     .rx_error_bad_frame(rx_error_bad_frame_int),
     .rx_error_bad_fcs(rx_error_bad_fcs_int),
+    .speed(speed_int),
     .ifg_delay(ifg_delay)
 );
 
