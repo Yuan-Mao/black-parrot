@@ -252,6 +252,7 @@ module ethernet_controller
         ,.rx_fifo_overflow(/* UNUSED */)
         ,.rx_fifo_bad_frame(/* UNUSED */)
         ,.rx_fifo_good_frame(/* UNUSED */)
+        ,.speed(/* UNUSED */)
 
         ,.ifg_delay(8'd24)
     );

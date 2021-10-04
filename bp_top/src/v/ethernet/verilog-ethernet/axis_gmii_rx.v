@@ -91,11 +91,19 @@ localparam [2:0]
     STATE_PAYLOAD = 3'd1,
     STATE_WAIT_LAST = 3'd2;
 
-reg [2:0] state_reg = STATE_IDLE, state_next;
+`ifdef TARGET_FPGA
+reg [2:0] state_reg = STATE_IDLE;
+`else
+reg [2:0] state_reg;
+`endif
+reg [2:0] state_next;
 
 // datapath control signals
 reg reset_crc;
 reg update_crc;
+
+
+`ifdef TARGET_FPGA
 
 reg mii_odd = 1'b0;
 reg mii_locked = 1'b0;
@@ -118,18 +126,61 @@ reg gmii_rx_er_d2 = 1'b0;
 reg gmii_rx_er_d3 = 1'b0;
 reg gmii_rx_er_d4 = 1'b0;
 
-reg [DATA_WIDTH-1:0] m_axis_tdata_reg = {DATA_WIDTH{1'b0}}, m_axis_tdata_next;
-reg m_axis_tvalid_reg = 1'b0, m_axis_tvalid_next;
-reg m_axis_tlast_reg = 1'b0, m_axis_tlast_next;
-reg m_axis_tuser_reg = 1'b0, m_axis_tuser_next;
+`else
 
-reg start_packet_reg = 1'b0, start_packet_next;
-reg error_bad_frame_reg = 1'b0, error_bad_frame_next;
-reg error_bad_fcs_reg = 1'b0, error_bad_fcs_next;
+reg mii_odd;
+reg mii_locked;
 
-reg [PTP_TS_WIDTH-1:0] ptp_ts_reg = 0, ptp_ts_next;
+reg [DATA_WIDTH-1:0] gmii_rxd_d0;
+reg [DATA_WIDTH-1:0] gmii_rxd_d1;
+reg [DATA_WIDTH-1:0] gmii_rxd_d2;
+reg [DATA_WIDTH-1:0] gmii_rxd_d3;
+reg [DATA_WIDTH-1:0] gmii_rxd_d4;
 
+reg gmii_rx_dv_d0;
+reg gmii_rx_dv_d1;
+reg gmii_rx_dv_d2;
+reg gmii_rx_dv_d3;
+reg gmii_rx_dv_d4;
+
+reg gmii_rx_er_d0;
+reg gmii_rx_er_d1;
+reg gmii_rx_er_d2;
+reg gmii_rx_er_d3;
+reg gmii_rx_er_d4;
+`endif
+
+`ifdef TARGET_FPGA
+reg [DATA_WIDTH-1:0] m_axis_tdata_reg = {DATA_WIDTH{1'b0}};
+reg m_axis_tvalid_reg = 1'b0;
+reg m_axis_tlast_reg = 1'b0;
+reg m_axis_tuser_reg = 1'b0;
+reg start_packet_reg = 1'b0;
+reg error_bad_frame_reg = 1'b0;
+reg error_bad_fcs_reg = 1'b0;
+reg [PTP_TS_WIDTH-1:0] ptp_ts_reg = 0;
 reg [31:0] crc_state = 32'hFFFFFFFF;
+`else
+reg [DATA_WIDTH-1:0] m_axis_tdata_reg;
+reg m_axis_tvalid_reg;
+reg m_axis_tlast_reg;
+reg m_axis_tuser_reg;
+reg start_packet_reg;
+reg error_bad_frame_reg;
+reg error_bad_fcs_reg;
+reg [PTP_TS_WIDTH-1:0] ptp_ts_reg;
+reg [31:0] crc_state;
+
+`endif
+
+reg [DATA_WIDTH-1:0] m_axis_tdata_next;
+reg m_axis_tvalid_next;
+reg m_axis_tlast_next;
+reg m_axis_tuser_next;
+reg start_packet_next;
+reg error_bad_frame_next;
+reg error_bad_fcs_next;
+reg [PTP_TS_WIDTH-1:0] ptp_ts_next;
 wire [31:0] crc_next;
 
 assign m_axis_tdata = m_axis_tdata_reg;
@@ -308,46 +359,69 @@ always @(posedge clk) begin
             end
         end
     end
+end
 
-    ptp_ts_reg <= ptp_ts_next;
+always @(posedge clk) begin
 
     m_axis_tdata_reg <= m_axis_tdata_next;
     m_axis_tlast_reg <= m_axis_tlast_next;
     m_axis_tuser_reg <= m_axis_tuser_next;
 
-    // delay input
-    if (clk_enable) begin
-        if (mii_select) begin
-            gmii_rxd_d0 <= {gmii_rxd[3:0], gmii_rxd_d0[7:4]};
+`ifndef TARGET_FPGA
+    if (rst) begin
+        ptp_ts_reg <= '0;
 
-            if (mii_odd) begin
+        gmii_rxd_d0 <= {DATA_WIDTH{1'b0}};
+        gmii_rxd_d1 <= {DATA_WIDTH{1'b0}};
+        gmii_rxd_d2 <= {DATA_WIDTH{1'b0}};
+        gmii_rxd_d3 <= {DATA_WIDTH{1'b0}};
+        gmii_rxd_d4 <= {DATA_WIDTH{1'b0}};
+
+        gmii_rx_er_d0 <= 1'b0;
+        gmii_rx_er_d1 <= 1'b0;
+        gmii_rx_er_d2 <= 1'b0;
+        gmii_rx_er_d3 <= 1'b0;
+        gmii_rx_er_d4 <= 1'b0;
+    end
+    else begin
+`endif
+    ptp_ts_reg <= ptp_ts_next;
+        // delay input
+        if (clk_enable) begin
+            if (mii_select) begin
+                gmii_rxd_d0 <= {gmii_rxd[3:0], gmii_rxd_d0[7:4]};
+    
+                if (mii_odd) begin
+                    gmii_rxd_d1 <= gmii_rxd_d0;
+                    gmii_rxd_d2 <= gmii_rxd_d1;
+                    gmii_rxd_d3 <= gmii_rxd_d2;
+                    gmii_rxd_d4 <= gmii_rxd_d3;
+
+                    gmii_rx_er_d0 <= gmii_rx_er | gmii_rx_er_d0;
+                    gmii_rx_er_d1 <= gmii_rx_er_d0;
+                    gmii_rx_er_d2 <= gmii_rx_er_d1;
+                    gmii_rx_er_d3 <= gmii_rx_er_d2;
+                    gmii_rx_er_d4 <= gmii_rx_er_d3;
+                end else begin
+                    gmii_rx_er_d0 <= gmii_rx_er;
+                end
+            end else begin
+                gmii_rxd_d0 <= gmii_rxd;
                 gmii_rxd_d1 <= gmii_rxd_d0;
                 gmii_rxd_d2 <= gmii_rxd_d1;
                 gmii_rxd_d3 <= gmii_rxd_d2;
                 gmii_rxd_d4 <= gmii_rxd_d3;
 
-                gmii_rx_er_d0 <= gmii_rx_er | gmii_rx_er_d0;
+                gmii_rx_er_d0 <= gmii_rx_er;
                 gmii_rx_er_d1 <= gmii_rx_er_d0;
                 gmii_rx_er_d2 <= gmii_rx_er_d1;
                 gmii_rx_er_d3 <= gmii_rx_er_d2;
                 gmii_rx_er_d4 <= gmii_rx_er_d3;
-            end else begin
-                gmii_rx_er_d0 <= gmii_rx_er;
             end
-        end else begin
-            gmii_rxd_d0 <= gmii_rxd;
-            gmii_rxd_d1 <= gmii_rxd_d0;
-            gmii_rxd_d2 <= gmii_rxd_d1;
-            gmii_rxd_d3 <= gmii_rxd_d2;
-            gmii_rxd_d4 <= gmii_rxd_d3;
-
-            gmii_rx_er_d0 <= gmii_rx_er;
-            gmii_rx_er_d1 <= gmii_rx_er_d0;
-            gmii_rx_er_d2 <= gmii_rx_er_d1;
-            gmii_rx_er_d3 <= gmii_rx_er_d2;
-            gmii_rx_er_d4 <= gmii_rx_er_d3;
         end
+`ifndef TARGET_FPGA
     end
+`endif
 end
 
 endmodule

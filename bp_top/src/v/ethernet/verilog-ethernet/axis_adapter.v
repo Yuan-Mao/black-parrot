@@ -130,31 +130,54 @@ localparam [2:0]
     STATE_TRANSFER_IN = 3'd1,
     STATE_TRANSFER_OUT = 3'd2;
 
-reg [2:0] state_reg = STATE_IDLE, state_next;
+`ifdef TARGET_FPGA
+reg [2:0] state_reg = STATE_IDLE;
+reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_reg = 0;
+reg [DATA_WIDTH-1:0] temp_tdata_reg = {DATA_WIDTH{1'b0}};
+reg [KEEP_WIDTH-1:0] temp_tkeep_reg = {KEEP_WIDTH{1'b0}};
+reg                  temp_tlast_reg = 1'b0;
+reg [ID_WIDTH-1:0]   temp_tid_reg   = {ID_WIDTH{1'b0}};
+reg [DEST_WIDTH-1:0] temp_tdest_reg = {DEST_WIDTH{1'b0}};
+reg [USER_WIDTH-1:0] temp_tuser_reg = {USER_WIDTH{1'b0}};
+reg                     m_axis_tready_int_reg = 1'b0;
+reg s_axis_tready_reg = 1'b0;
+`else
+reg [2:0] state_reg;
+reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_reg;
+reg [DATA_WIDTH-1:0] temp_tdata_reg;
+reg [KEEP_WIDTH-1:0] temp_tkeep_reg;
+reg                  temp_tlast_reg;
+reg [ID_WIDTH-1:0]   temp_tid_reg;
+reg [DEST_WIDTH-1:0] temp_tdest_reg;
+reg [USER_WIDTH-1:0] temp_tuser_reg;
+reg                     m_axis_tready_int_reg;
+reg s_axis_tready_reg;
+`endif
 
-reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_reg = 0, segment_count_next;
+reg [2:0] state_next;
+
+reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_next;
 
 reg last_segment;
 
-reg [DATA_WIDTH-1:0] temp_tdata_reg = {DATA_WIDTH{1'b0}}, temp_tdata_next;
-reg [KEEP_WIDTH-1:0] temp_tkeep_reg = {KEEP_WIDTH{1'b0}}, temp_tkeep_next;
-reg                  temp_tlast_reg = 1'b0, temp_tlast_next;
-reg [ID_WIDTH-1:0]   temp_tid_reg   = {ID_WIDTH{1'b0}}, temp_tid_next;
-reg [DEST_WIDTH-1:0] temp_tdest_reg = {DEST_WIDTH{1'b0}}, temp_tdest_next;
-reg [USER_WIDTH-1:0] temp_tuser_reg = {USER_WIDTH{1'b0}}, temp_tuser_next;
+reg [DATA_WIDTH-1:0] temp_tdata_next;
+reg [KEEP_WIDTH-1:0] temp_tkeep_next;
+reg                  temp_tlast_next;
+reg [ID_WIDTH-1:0]   temp_tid_next;
+reg [DEST_WIDTH-1:0] temp_tdest_next;
+reg [USER_WIDTH-1:0] temp_tuser_next;
 
 // internal datapath
 reg  [M_DATA_WIDTH-1:0] m_axis_tdata_int;
 reg  [M_KEEP_WIDTH-1:0] m_axis_tkeep_int;
 reg                     m_axis_tvalid_int;
-reg                     m_axis_tready_int_reg = 1'b0;
 reg                     m_axis_tlast_int;
 reg  [ID_WIDTH-1:0]     m_axis_tid_int;
 reg  [DEST_WIDTH-1:0]   m_axis_tdest_int;
 reg  [USER_WIDTH-1:0]   m_axis_tuser_int;
 wire                    m_axis_tready_int_early;
 
-reg s_axis_tready_reg = 1'b0, s_axis_tready_next;
+reg s_axis_tready_next;
 
 assign s_axis_tready = s_axis_tready_reg;
 
@@ -434,14 +457,34 @@ end
 
 always @(posedge clk) begin
     if (rst) begin
+`ifndef TARGET_FPGA
+        segment_count_reg <= '0;
+
+        temp_tdata_reg <= '0;
+        temp_tkeep_reg <= '0;
+        temp_tlast_reg <= '0;
+        temp_tid_reg   <= '0;
+        temp_tdest_reg <= '0;
+        temp_tuser_reg <= '0;
+`endif
         state_reg <= STATE_IDLE;
         s_axis_tready_reg <= 1'b0;
     end else begin
+`ifndef TARGET_FPGA
+        segment_count_reg <= segment_count_next;
+
+        temp_tdata_reg <= temp_tdata_next;
+        temp_tkeep_reg <= temp_tkeep_next;
+        temp_tlast_reg <= temp_tlast_next;
+        temp_tid_reg   <= temp_tid_next;
+        temp_tdest_reg <= temp_tdest_next;
+        temp_tuser_reg <= temp_tuser_next;
+`endif
         state_reg <= state_next;
 
         s_axis_tready_reg <= s_axis_tready_next;
     end
-
+`ifdef TARGET_FPGA
     segment_count_reg <= segment_count_next;
 
     temp_tdata_reg <= temp_tdata_next;
@@ -450,24 +493,46 @@ always @(posedge clk) begin
     temp_tid_reg   <= temp_tid_next;
     temp_tdest_reg <= temp_tdest_next;
     temp_tuser_reg <= temp_tuser_next;
+`endif
+
 end
 
 // output datapath logic
+`ifdef TARGET_FPGA
 reg [M_DATA_WIDTH-1:0] m_axis_tdata_reg  = {M_DATA_WIDTH{1'b0}};
 reg [M_KEEP_WIDTH-1:0] m_axis_tkeep_reg  = {M_KEEP_WIDTH{1'b0}};
-reg                    m_axis_tvalid_reg = 1'b0, m_axis_tvalid_next;
+reg                    m_axis_tvalid_reg = 1'b0;
 reg                    m_axis_tlast_reg  = 1'b0;
 reg [ID_WIDTH-1:0]     m_axis_tid_reg    = {ID_WIDTH{1'b0}};
 reg [DEST_WIDTH-1:0]   m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
 reg [USER_WIDTH-1:0]   m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
-
 reg [M_DATA_WIDTH-1:0] temp_m_axis_tdata_reg  = {M_DATA_WIDTH{1'b0}};
 reg [M_KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg  = {M_KEEP_WIDTH{1'b0}};
-reg                    temp_m_axis_tvalid_reg = 1'b0, temp_m_axis_tvalid_next;
+reg                    temp_m_axis_tvalid_reg = 1'b0;
 reg                    temp_m_axis_tlast_reg  = 1'b0;
 reg [ID_WIDTH-1:0]     temp_m_axis_tid_reg    = {ID_WIDTH{1'b0}};
 reg [DEST_WIDTH-1:0]   temp_m_axis_tdest_reg  = {DEST_WIDTH{1'b0}};
 reg [USER_WIDTH-1:0]   temp_m_axis_tuser_reg  = {USER_WIDTH{1'b0}};
+`else
+reg [M_DATA_WIDTH-1:0] m_axis_tdata_reg;
+reg [M_KEEP_WIDTH-1:0] m_axis_tkeep_reg;
+reg                    m_axis_tvalid_reg;
+reg                    m_axis_tlast_reg;
+reg [ID_WIDTH-1:0]     m_axis_tid_reg;
+reg [DEST_WIDTH-1:0]   m_axis_tdest_reg;
+reg [USER_WIDTH-1:0]   m_axis_tuser_reg;
+reg [M_DATA_WIDTH-1:0] temp_m_axis_tdata_reg;
+reg [M_KEEP_WIDTH-1:0] temp_m_axis_tkeep_reg;
+reg                    temp_m_axis_tvalid_reg;
+reg                    temp_m_axis_tlast_reg;
+reg [ID_WIDTH-1:0]     temp_m_axis_tid_reg;
+reg [DEST_WIDTH-1:0]   temp_m_axis_tdest_reg;
+reg [USER_WIDTH-1:0]   temp_m_axis_tuser_reg;
+`endif
+
+reg                    m_axis_tvalid_next;
+
+reg                    temp_m_axis_tvalid_next;
 
 // datapath control
 reg store_axis_int_to_output;
@@ -523,9 +588,18 @@ always @(posedge clk) begin
         m_axis_tready_int_reg <= m_axis_tready_int_early;
         temp_m_axis_tvalid_reg <= temp_m_axis_tvalid_next;
     end
+end
 
+always @(posedge clk) begin
     // datapath
-    if (store_axis_int_to_output) begin
+    if(rst) begin
+        m_axis_tdata_reg <= '0;
+        m_axis_tkeep_reg <= '0;
+        m_axis_tlast_reg <= '0;
+        m_axis_tid_reg   <= '0;
+        m_axis_tdest_reg <= '0;
+        m_axis_tuser_reg <= '0;
+    end else if (store_axis_int_to_output) begin
         m_axis_tdata_reg <= m_axis_tdata_int;
         m_axis_tkeep_reg <= m_axis_tkeep_int;
         m_axis_tlast_reg <= m_axis_tlast_int;
@@ -540,8 +614,17 @@ always @(posedge clk) begin
         m_axis_tdest_reg <= temp_m_axis_tdest_reg;
         m_axis_tuser_reg <= temp_m_axis_tuser_reg;
     end
+end
 
-    if (store_axis_int_to_temp) begin
+always @(posedge clk) begin
+    if(rst) begin
+        temp_m_axis_tdata_reg <= '0;
+        temp_m_axis_tkeep_reg <= '0;
+        temp_m_axis_tlast_reg <= '0;
+        temp_m_axis_tid_reg   <= '0;
+        temp_m_axis_tdest_reg <= '0;
+        temp_m_axis_tuser_reg <= '0;
+    end else if (store_axis_int_to_temp) begin
         temp_m_axis_tdata_reg <= m_axis_tdata_int;
         temp_m_axis_tkeep_reg <= m_axis_tkeep_int;
         temp_m_axis_tlast_reg <= m_axis_tlast_int;

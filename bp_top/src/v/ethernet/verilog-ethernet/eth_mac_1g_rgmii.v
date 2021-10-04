@@ -104,39 +104,71 @@ wire [7:0]  mac_gmii_txd;
 wire        mac_gmii_tx_en;
 wire        mac_gmii_tx_er;
 
+`ifdef TARGET_FPGA
 reg [1:0] speed_reg = 2'b10;
 reg mii_select_reg = 1'b0;
+`else
+reg [1:0] speed_reg;
+reg mii_select_reg ;
+`endif
 
+`ifdef TARGET_FPGA
 (* srl_style = "register" *)
 reg [1:0] tx_mii_select_sync = 2'd0;
+`else
+reg [1:0] tx_mii_select_sync;
+`endif
 
 always @(posedge tx_clk) begin
     tx_mii_select_sync <= {tx_mii_select_sync[0], mii_select_reg};
 end
 
+`ifdef TARGET_FPGA
 (* srl_style = "register" *)
 reg [1:0] rx_mii_select_sync = 2'd0;
+`else
+reg [1:0] rx_mii_select_sync;
+`endif
 
 always @(posedge rx_clk) begin
     rx_mii_select_sync <= {rx_mii_select_sync[0], mii_select_reg};
 end
 
 // PHY speed detection
+`ifdef TARGET_FPGA
 reg [2:0] rx_prescale = 3'd0;
+`else
+reg [2:0] rx_prescale;
+`endif
 
 always @(posedge rx_clk) begin
-    rx_prescale <= rx_prescale + 3'd1;
+`ifndef TARGET_FPGA
+    if(rx_rst)
+        rx_prescale <= 3'd0;
+    else
+`endif
+        rx_prescale <= rx_prescale + 3'd1;
 end
 
+`ifdef TARGET_FPGA
 (* srl_style = "register" *)
 reg [2:0] rx_prescale_sync = 3'd0;
+`else
+reg [2:0] rx_prescale_sync;
+`endif
 
 always @(posedge gtx_clk) begin
     rx_prescale_sync <= {rx_prescale_sync[1:0], rx_prescale[2]};
 end
 
+`ifdef TARGET_FPGA
 reg [6:0] rx_speed_count_1 = 0;
 reg [1:0] rx_speed_count_2 = 0;
+`else
+reg [6:0] rx_speed_count_1;
+reg [1:0] rx_speed_count_2;
+`endif
+
 
 always @(posedge gtx_clk) begin
     if (gtx_rst) begin
