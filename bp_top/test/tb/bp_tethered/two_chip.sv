@@ -45,7 +45,7 @@ module two_chip
     logic [3:0] tb2_rgmii_txd_lo;
     logic       tb2_rgmii_tx_ctl_lo;
 
-    testbench
+    ethernet_cpu_testbench
     #(
         .icache_trace_p(icache_trace_p)
         ,.dcache_trace_p(dcache_trace_p)
@@ -71,7 +71,7 @@ module two_chip
         ,.no_bind_p(no_bind_p)
 
         ,.nbf_filename_p("prog1.nbf")
-    ) tb1
+    ) chip0
     (
         .chip_id_i(1'b0)
         ,.rgmii_tx_clk_o(tb1_rgmii_tx_clk_lo)
@@ -85,7 +85,7 @@ module two_chip
         ,.reset_o(reset_o)
     );
 
-    testbench
+    ethernet_cpu_testbench
     #(
         ,.icache_trace_p(icache_trace_p)
         ,.dcache_trace_p(dcache_trace_p)
@@ -111,7 +111,7 @@ module two_chip
         ,.no_bind_p(no_bind_p)
 
         ,.nbf_filename_p("prog2.nbf")
-    ) tb2
+    ) chip1
     (
         .chip_id_i(1'b1)
         ,.rgmii_tx_clk_o(tb2_rgmii_tx_clk_lo)
