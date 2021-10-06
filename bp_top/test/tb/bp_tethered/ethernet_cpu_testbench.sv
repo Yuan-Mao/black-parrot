@@ -174,8 +174,7 @@ module ethernet_cpu_testbench
         ,.nbf_filename_p(nbf_filename_p)
     ) dut
     (
-        .chip_id_i(chip_id_i)
-        ,.clkx2_i(clkx2_lo)
+        .clkx2_i(clkx2_lo)
         ,.clk_o(clk_lo)
         ,.reset_i(reset_lo)
 

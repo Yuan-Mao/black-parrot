@@ -52,8 +52,7 @@ module ethernet_cpu_wrapper
    , parameter nbf_filename_p              = "inv"
    )
   (
-      input logic                              chip_id_i
-    , input logic                              clkx2_i
+      input logic                              clkx2_i
     , output logic                             clk_o
     , input logic                              reset_i
 
