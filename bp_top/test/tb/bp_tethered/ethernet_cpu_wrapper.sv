@@ -52,9 +52,10 @@ module ethernet_cpu_wrapper
    , parameter nbf_filename_p              = "inv"
    )
   (
-      input logic                              clkx2_i
-    , output logic                             clk_o
-    , input logic                              reset_i
+      input logic                              clk250_i
+    , input logic                              clk250_reset_i // sync with clk250_i
+    , input logic                              bp_clk_i
+    , input logic                              bp_reset_i // sync with bp_clk_i
 
     , output logic                             rgmii_tx_clk_o
     , output logic [3:0]                       rgmii_txd_o
@@ -100,18 +101,6 @@ module ethernet_cpu_wrapper
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
 
-
-// Bit to deal with initial X->0 transition detection
-  bit clk90_li;
-  bit clk_li;
-  assign clk_o = clk_li;
-
-  always_ff @(posedge clkx2_i)
-    clk_li <= ~clk_li;
-  always_ff @(negedge clkx2_i)
-    clk90_li <= ~clk90_li;
-    
-
   bp_bedrock_cce_mem_msg_s proc_io_cmd_lo;
   logic proc_io_cmd_v_lo, proc_io_cmd_ready_li;
   bp_bedrock_cce_mem_msg_s proc_io_resp_li;
@@ -129,8 +118,8 @@ module ethernet_cpu_wrapper
 
 
   bp_unicore #(.bp_params_p(bp_params_p)) black_parrot
-   (.clk_i(clk_li)
-    ,.reset_i(reset_i)
+   (.clk_i(bp_clk_i)
+    ,.reset_i(bp_reset_i)
 
     ,.io_cmd_o(proc_io_cmd_lo)
     ,.io_cmd_v_o(proc_io_cmd_v_lo)
@@ -210,8 +199,11 @@ module ethernet_cpu_wrapper
   assign nbf_io_resp_o        = load_resp_lo;
 
   ethernet_controller ethernet_controller
-  (.clk_i(clk_li)
-   ,.reset_i(reset_i)
+  (.clk250_i(clk250_i)
+   ,.clk250_reset_i(clk250_reset_i)
+   ,.bp_clk_i(bp_clk_i)
+   ,.bp_reset_i(bp_reset_i)
+
    ,.lce_id_i(lce_id_width_p'('b11))
 
    ,.io_cmd_i(eth_io_cmd_li)
@@ -234,8 +226,6 @@ module ethernet_cpu_wrapper
    ,.rgmii_tx_clk_o(rgmii_tx_clk_o)
    ,.rgmii_txd_o(rgmii_txd_o)
    ,.rgmii_tx_ctl_o(rgmii_tx_ctl_o)
-
-   ,.clk90_i(clk90_li)
    );
 
 

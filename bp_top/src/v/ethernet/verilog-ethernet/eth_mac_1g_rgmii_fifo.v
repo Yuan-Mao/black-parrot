@@ -60,11 +60,11 @@ module eth_mac_1g_rgmii_fifo #
     parameter RX_DROP_WHEN_FULL = RX_FRAME_FIFO
 )
 (
-    input  wire                       gtx_clk,
-    input  wire                       gtx_clk90,
-    input  wire                       gtx_rst,
-    input  wire                       logic_clk,
-    input  wire                       logic_rst,
+    input  wire                       gtx_clk, // sync with gtx_clk250
+    input  wire                       gtx_clk250,
+    input  wire                       gtx_rst, // sync with gtx250
+    input  wire                       logic_clk, // bp clk
+    input  wire                       logic_rst, // bp reset. sync with bp clk
 
     /*
      * AXI input
@@ -235,7 +235,7 @@ eth_mac_1g_rgmii #(
 )
 eth_mac_1g_rgmii_inst (
     .gtx_clk(gtx_clk),
-    .gtx_clk90(gtx_clk90),
+    .gtx_clk250(gtx_clk250),
     .gtx_rst(gtx_rst),
     .tx_clk(tx_clk),
     .tx_rst(tx_rst),

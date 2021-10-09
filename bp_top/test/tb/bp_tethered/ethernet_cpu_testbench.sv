@@ -72,13 +72,14 @@ module ethernet_cpu_testbench
   endfunction
 
   function int get_sim_period();
-    return (`BP_SIM_CLK_PERIOD);
+    return (`BP_SIM_CLK_PERIOD); // should be `BP_SIM_CLK_PERIOD or 4 ns?
   endfunction
 
   bit dram_clk_i, dram_reset_i;
-  bit clkx2_lo;
-  bit clk_lo;
-  bit reset_lo;
+  bit clk250_i;
+  bit bp_clk_i;
+  bit clk250_reset_i;
+  bit bp_reset_i;
 
   `ifdef VERILATOR
     bsg_nonsynth_dpi_clock_gen
@@ -104,18 +105,37 @@ module ethernet_cpu_testbench
   `else
     bsg_nonsynth_clock_gen
   `endif
-   #(.cycle_time_p(`BP_SIM_CLK_PERIOD / 2))
-   clock_gen
-    (.o(clkx2_lo));
+   #(.cycle_time_p(`BP_SIM_CLK_PERIOD)) // 4 ns
+   clk250_clock_gen
+    (.o(clk250_i));
+
+  `ifdef VERILATOR
+    bsg_nonsynth_dpi_clock_gen
+  `else
+    bsg_nonsynth_clock_gen
+  `endif
+   #(.cycle_time_p(`BP_SIM_CLK_PERIOD))
+   bp_clock_gen
+    (.o(bp_clk_i));
 
   bsg_nonsynth_reset_gen
    #(.num_clocks_p(1)
      ,.reset_cycles_lo_p(0)
-     ,.reset_cycles_hi_p(20)
+     ,.reset_cycles_hi_p(10)
      )
-   reset_gen
-    (.clk_i(clk_lo)
-     ,.async_reset_o(reset_lo)
+   clk250_reset_gen
+    (.clk_i(clk250_i)
+     ,.async_reset_o(clk250_reset_i)
+     );
+
+  bsg_nonsynth_reset_gen
+   #(.num_clocks_p(1)
+     ,.reset_cycles_lo_p(0)
+     ,.reset_cycles_hi_p(10)
+     )
+   bp_reset_gen
+    (.clk_i(bp_clk_i)
+     ,.async_reset_o(bp_reset_i)
      );
 
   `declare_bsg_cache_dma_pkt_s(caddr_width_p);
@@ -126,7 +146,7 @@ module ethernet_cpu_testbench
   logic [num_cce_p-1:0][l2_fill_width_p-1:0] dma_data_li;
   logic [num_cce_p-1:0] dma_data_v_li, dma_data_ready_and_lo;
 
-  assign reset_o = reset_lo;
+  assign reset_o = bp_reset_i | clk250_reset_i;
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
 
@@ -174,9 +194,10 @@ module ethernet_cpu_testbench
         ,.nbf_filename_p(nbf_filename_p)
     ) dut
     (
-        .clkx2_i(clkx2_lo)
-        ,.clk_o(clk_lo)
-        ,.reset_i(reset_lo)
+        .clk250_i(clk250_i)
+        ,.clk250_reset_i(clk250_reset_i)
+        ,.bp_clk_i(bp_clk_i)
+        ,.bp_reset_i(bp_reset_i)
 
         ,.rgmii_tx_clk_o(rgmii_tx_clk_o)
         ,.rgmii_txd_o(rgmii_txd_o)
@@ -225,8 +246,8 @@ module ethernet_cpu_testbench
      ,.mem_els_p(2**28)
      )
    dram
-    (.clk_i(clk_lo)
-     ,.reset_i(reset_lo)
+    (.clk_i(bp_clk_i)
+     ,.reset_i(bp_reset_i)
 
      ,.dma_pkt_i(dma_pkt_lo)
      ,.dma_pkt_v_i(dma_pkt_v_lo)
@@ -270,8 +291,8 @@ module ethernet_cpu_testbench
      ,.cosim_p(cosim_p)
      )
    host
-    (.clk_i(clk_lo)
-     ,.reset_i(reset_lo)
+    (.clk_i(bp_clk_i)
+     ,.reset_i(bp_reset_i)
 
      ,.io_cmd_i(host_io_cmd_lo)
      ,.io_cmd_v_i(host_io_cmd_v_lo)
@@ -300,8 +321,8 @@ module ethernet_cpu_testbench
    #(.bp_params_p(bp_params_p)
     ,.nbf_filename_p(nbf_filename_p))
    nbf_loader
-    (.clk_i(clk_lo)
-     ,.reset_i(reset_lo)
+    (.clk_i(bp_clk_i)
+     ,.reset_i(bp_reset_i)
 
      ,.lce_id_i(lce_id_width_p'('b10))
 

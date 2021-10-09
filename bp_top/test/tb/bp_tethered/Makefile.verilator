@@ -103,7 +103,7 @@ $(SIM_DIR)/run_samplesc: $(SAMPLE_COLLATERAL)
 	-@grep "PASS" $(SIM_LOG) || echo "FAILED" > $(SIM_ERROR)
 	-@grep "STATS" -A 3 $(SIM_LOG) > $(SIM_REPORT)
 
-
+# My additional options for Verilator:
 #VV_OPTS += --trace-fst --trace-structs --trace-depth 15
 VV_OPTS += +define+TARGET_FPGA
 

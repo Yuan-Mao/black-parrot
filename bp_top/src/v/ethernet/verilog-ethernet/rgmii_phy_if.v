@@ -45,9 +45,9 @@ module rgmii_phy_if #
     parameter USE_CLK90 = "TRUE"
 )
 (
-    input  wire        clk,
-    input  wire        clk90,
-    input  wire        rst,
+    input  wire        clk, // sync with clk
+    input  wire        clk250_i,
+    input  wire        rst, // sync with clk, clk250_i
 
     /*
      * GMII interface to MAC
@@ -105,12 +105,23 @@ assign mac_gmii_rx_er = rgmii_rx_ctl_1 ^ rgmii_rx_ctl_2;
 
 // transmit
 
+`ifdef TARGET_FPGA
 reg rgmii_tx_clk_1 = 1'b1;
 reg rgmii_tx_clk_2 = 1'b0;
 reg rgmii_tx_clk_rise = 1'b1;
 reg rgmii_tx_clk_fall = 1'b1;
 
-reg [5:0] count_reg = 6'd0, count_next;
+reg [5:0] count_reg = 6'd0;
+`else
+reg rgmii_tx_clk_1;
+reg rgmii_tx_clk_2;
+reg rgmii_tx_clk_rise;
+reg rgmii_tx_clk_fall;
+
+reg [5:0] count_reg;
+
+`endif
+reg [5:0] count_next;
 
 always @(posedge clk) begin
     if (rst) begin
@@ -160,13 +171,20 @@ always @(posedge clk) begin
         end
     end
 end
-
+`ifdef TARGET_FPGA
 reg [3:0] rgmii_txd_1 = 0;
 reg [3:0] rgmii_txd_2 = 0;
 reg rgmii_tx_ctl_1 = 1'b0;
 reg rgmii_tx_ctl_2 = 1'b0;
-
 reg gmii_clk_en = 1'b1;
+`else
+reg [3:0] rgmii_txd_1;
+reg [3:0] rgmii_txd_2;
+reg rgmii_tx_ctl_1;
+reg rgmii_tx_ctl_2;
+reg gmii_clk_en;
+`endif
+
 
 always @* begin
     if (speed == 2'b00) begin
@@ -203,42 +221,61 @@ always @* begin
     end
 end
 
-wire phy_rgmii_tx_clk_new;
-wire [3:0] phy_rgmii_txd_new;
-wire phy_rgmii_tx_ctl_new;
+wire phy_rgmii_tx_clk_int;
 
+oddr_clock_downsample
+  oddr_clock_downsample_inst (
+    .reset_i(rst)
+    ,.clk_i(clk250_i)
+    ,.clk_setting_i({rgmii_tx_clk_2, rgmii_tx_clk_1})
+    ,.ready_o(/* UNUSED */)
+    ,.clk_r_o(phy_rgmii_tx_clk_int)
+  );
+
+bsg_link_oddr_phy #(.width_p(5))
+  data_oddr_inst (
+    .reset_i(rst)
+    ,.clk_i(clk250_i)
+    ,.data_i({{rgmii_txd_2, rgmii_tx_ctl_2}, {rgmii_txd_1, rgmii_tx_ctl_1}})
+    ,.ready_o(/* UNUSED */)
+              
+    ,.data_r_o({phy_rgmii_txd, phy_rgmii_tx_ctl})
+    ,.clk_r_o(/* UNUSED */)
+  );
+
+`ifdef TARGET_FPGA
 oddr #(
     .TARGET(TARGET),
     .IODDR_STYLE(IODDR_STYLE),
     .WIDTH(1)
 )
-clk_oddr_inst (
-    .clk(USE_CLK90 == "TRUE" ? clk90 : clk),
-    .d1(rgmii_tx_clk_1),
-    .d2(rgmii_tx_clk_2),
+  clock_output_oddr_inst (
+    .clk(phy_rgmii_tx_clk_int),
+    .d1(1'b1),
+    .d2(1'b0),
     .q(phy_rgmii_tx_clk)
 );
-
-oddr #(
-    .TARGET(TARGET),
-    .IODDR_STYLE(IODDR_STYLE),
-    .WIDTH(5)
-)
-data_oddr_inst (
-    .clk(clk),
-    .d1({rgmii_txd_1, rgmii_tx_ctl_1}),
-    .d2({rgmii_txd_2, rgmii_tx_ctl_2}),
-    .q({phy_rgmii_txd, phy_rgmii_tx_ctl})
-);
+`else
+assign phy_rgmii_tx_clk = phy_rgmii_tx_clk_int;
+`endif
 
 assign mac_gmii_tx_clk = clk;
 
 assign mac_gmii_tx_clk_en = gmii_clk_en;
 
 // reset sync
+`ifdef TARGET_FPGA
 reg [3:0] tx_rst_reg = 4'hf;
-assign mac_gmii_tx_rst = tx_rst_reg[0];
+reg [3:0] rx_rst_reg = 4'hf;
+`else
+reg [3:0] tx_rst_reg;
+reg [3:0] rx_rst_reg;
+`endif
+assign mac_gmii_tx_rst = rst;
+assign mac_gmii_rx_rst = rx_rst_reg[0];
 
+// Should be unused:
+/*
 always @(posedge mac_gmii_tx_clk or posedge rst) begin
     if (rst) begin
         tx_rst_reg <= 4'hf;
@@ -246,9 +283,7 @@ always @(posedge mac_gmii_tx_clk or posedge rst) begin
         tx_rst_reg <= {1'b0, tx_rst_reg[3:1]};
     end
 end
-
-reg [3:0] rx_rst_reg = 4'hf;
-assign mac_gmii_rx_rst = rx_rst_reg[0];
+*/
 
 always @(posedge mac_gmii_rx_clk or posedge rst) begin
     if (rst) begin

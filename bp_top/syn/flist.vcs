@@ -306,11 +306,13 @@ $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/eth_mac_1g.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/lfsr.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/iddr.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/oddr.v
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/bsg_link_oddr_phy.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/rgmii_phy_if.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/ssio_ddr_in.v
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/ethernet_interface.sv
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/to_tx_axis.sv
 $BP_TOP_DIR/src/v/ethernet/verilog-ethernet/from_rx_axis.sv
+$BP_TOP_DIR/src/v/ethernet/verilog-ethernet/oddr_clock_downsample.v
 $BP_TOP_DIR/test/tb/bp_tethered/two_chip.sv
 
 # BSG Staging area

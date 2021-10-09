@@ -10,9 +10,11 @@ module ethernet_controller
     `declare_bp_bedrock_mem_if_widths(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce)
 )
 (
+      input logic                                    clk250_i
+    , input logic                                    clk250_reset_i // sync with clk250_i
+    , input logic                                    bp_clk_i
+    , input logic                                    bp_reset_i // sync with bp_clk_i
 
-    input logic                                      clk_i
-    , input logic                                    reset_i
     , input logic [lce_id_width_p-1:0]               lce_id_i
 
     /* BP I/O command input */
@@ -38,8 +40,6 @@ module ethernet_controller
     , output logic                                   rgmii_tx_clk_o
     , output logic [3:0]                             rgmii_txd_o
     , output logic                                   rgmii_tx_ctl_o
-
-    , input logic                                    clk90_i
 );
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
@@ -48,6 +48,17 @@ module ethernet_controller
   localparam reg_addr_width_lp = paddr_width_p;
   localparam max_credits_lp = 8;
   localparam eth_rx_state_width_lp = 3;
+
+  // Bit to deal with initial X->0 transition detection
+  bit clk125_lo;
+
+  bsg_counter_clock_downsample #(.width_p(2)) clock_downsampler
+   (.clk_i(clk250_i)
+    ,.reset_i(clk250_reset_i)
+    ,.val_i(2'b0) // divide by 2
+    ,.clk_r_o(clk125_lo)
+   );
+
 
   logic [els_lp-1:0]                       r_v_lo;
   logic [els_lp-1:0]                       w_v_lo;
@@ -110,8 +121,8 @@ module ethernet_controller
   // TODO: May need to change the MMIO location from 40'h0050_0000 to somewhere else.
      ,.base_addr_p({40'h0050_0008, 40'h0050_0000}))
    ethernet_interface
-   (.clk_i(clk_i)
-    ,.reset_i(reset_i)
+   (.clk_i(bp_clk_i)
+    ,.reset_i(bp_reset_i)
 
     ,.mem_cmd_header_i(mem_cmd_header_li)
     ,.mem_cmd_data_i(mem_cmd_data_li)
@@ -143,7 +154,7 @@ module ethernet_controller
   logic [3:0] ext_state_r;
 
 
-  always_ff @(posedge clk_i) begin
+  always_ff @(posedge bp_clk_i) begin
     if(r_v_lo[0])
       ext_state_r <= {tx_ext_state_lo, rx_ext_state_lo};
   end
@@ -156,8 +167,8 @@ module ethernet_controller
                 ,.eth_cmd_width_p(eth_cmd_width_lp)
                 ) from_rx_axis
     (
-      .clk_i(clk_i)
-      ,.reset_i(reset_i)
+      .clk_i(bp_clk_i)
+      ,.reset_i(bp_reset_i)
       ,.lce_id_i(lce_id_i)
 
       ,.eth_cmd_i(eth_cmd_li)
@@ -184,8 +195,8 @@ module ethernet_controller
               ,.axis_data_width_p(axis_data_width_lp)
               ) to_tx_axis
     (
-      .clk_i(clk_i)
-      ,.reset_i(reset_i)
+      .clk_i(bp_clk_i)
+      ,.reset_i(bp_reset_i)
 
       ,.frame_data_i(data_lo)
       ,.frame_data_v_i(w_v_lo[1])
@@ -214,13 +225,13 @@ module ethernet_controller
         // gtx_rst should be sync with gtx_clk
         // logic_clk: bp clock
         // logic_rst should be sync with logic_clk
-        .gtx_clk(clk_i)
-        ,.gtx_clk90(clk90_i)
-        ,.gtx_rst(reset_i)
-        ,.logic_clk(clk_i)
-        ,.logic_rst(reset_i) // difference between rst ?
+        .gtx_clk(clk125_lo)
+        ,.gtx_clk250(clk250_i)
+        ,.gtx_rst(clk250_reset_i)
+        ,.logic_clk(bp_clk_i)
+        ,.logic_rst(bp_reset_i)
 
-        /* AXI input */
+        /* AXI input */ // with logic_clk
         ,.tx_axis_tdata(tx_axis_tdata_li)
         ,.tx_axis_tkeep(tx_axis_tkeep_li)
         ,.tx_axis_tvalid(tx_axis_tvalid_li)

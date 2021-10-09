@@ -46,11 +46,14 @@ int main(int argc, char **argv) {
     bsg_timekeeper::next();
     tb->eval();
     #if VM_TRACE_FST
+    if(cnt > 1600000)
       wf->dump(sc_time_stamp());
     #endif
     if((cnt % 4096UL) == 0)
       std::cout << "Iteration: " << cnt << std::endl;
     cnt++;
+//    if(cnt > 2500000)
+//      break;
   }
   std::cout << "Finishing test" << std::endl;
 
