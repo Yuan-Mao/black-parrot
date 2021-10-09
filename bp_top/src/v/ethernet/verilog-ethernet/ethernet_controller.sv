@@ -108,8 +108,6 @@ module ethernet_controller
   assign io_resp_v_o = mem_resp_v_lo;
   assign mem_resp_ready_and_li = io_resp_ready_i;
 
-  // TODO: put this into from_rx_axis ?
-  assign io_resp_ready_o = 1'b1;
 
   logic [els_lp-1:0] w_yumi_li;
   assign w_yumi_li[0] = w_v_lo[0];
@@ -185,7 +183,9 @@ module ethernet_controller
       ,.io_cmd_o(io_cmd_o)
       ,.io_cmd_v_o(io_cmd_v_o)
       ,.io_cmd_yumi_i(io_cmd_yumi_i)
+      ,.io_resp_i(io_resp_i)
       ,.io_resp_v_i(io_resp_v_i)
+      ,.io_resp_ready_o(io_resp_ready_o)
 
       ,.rx_ext_state_o(rx_ext_state_lo)
     );

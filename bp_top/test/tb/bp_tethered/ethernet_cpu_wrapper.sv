@@ -101,6 +101,10 @@ module ethernet_cpu_wrapper
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
 
+  // The location and size of the user Ethernet buffer
+  localparam [paddr_width_p-1:0] user_ethernet_buffer_addr = 32'h8030_0000;
+  localparam [paddr_width_p-1:0] user_ethernet_buffer_size = 32'h0000_1000;
+
   bp_bedrock_cce_mem_msg_s proc_io_cmd_lo;
   logic proc_io_cmd_v_lo, proc_io_cmd_ready_li;
   bp_bedrock_cce_mem_msg_s proc_io_resp_li;
@@ -164,10 +168,13 @@ module ethernet_cpu_wrapper
   wire local_cmd_li = (proc_io_cmd_lo.header.addr < dram_base_addr_gp);
   wire is_eth_cmd   = local_cmd_li & (device_cmd_li == eth_dev_gp);
 
+  logic [paddr_width_p-1:0] io_resp_header_addr;
+  assign io_resp_header_addr = load_resp_lo.header.addr;
 
-  bp_bedrock_cce_mem_payload_s io_resp_payload;
-  assign io_resp_payload = load_resp_lo.header.payload;
-  wire is_eth_resp = (io_resp_payload.lce_id == 3);
+  // Use the address to identify which the io_resp is for
+  assign is_eth_resp = ((io_resp_header_addr >= user_ethernet_buffer_addr)
+                    && (io_resp_header_addr < user_ethernet_buffer_addr + 
+                        user_ethernet_buffer_size));
 
   logic eth_io_cmd_v_li;
   logic eth_io_cmd_ready_lo;
@@ -204,7 +211,7 @@ module ethernet_cpu_wrapper
    ,.bp_clk_i(bp_clk_i)
    ,.bp_reset_i(bp_reset_i)
 
-   ,.lce_id_i(lce_id_width_p'('b11))
+   ,.lce_id_i(lce_id_width_p'('b10))
 
    ,.io_cmd_i(eth_io_cmd_li)
    ,.io_cmd_v_i(eth_io_cmd_v_li)

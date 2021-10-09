@@ -369,12 +369,7 @@ module bp_unicore_lite
          );
       wire any_resp_v_li = |{loopback_resp_v_lo, mem_resp_v_i, io_resp_v_i, clint_resp_v_lo, cfg_resp_v_lo};
 
-//      assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
-
-      if(i == 2)
-        assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == 2 || resp_selected_payload_li.lce_id == 3);
-	  else
-        assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
+      assign proc_resp_v_li[i] = any_resp_v_li & (resp_selected_payload_li.lce_id == i);
     end
   assign cfg_resp_yumi_li      = |proc_resp_yumi_lo & cfg_resp_grant_li;
   assign clint_resp_yumi_li    = |proc_resp_yumi_lo & clint_resp_grant_li;

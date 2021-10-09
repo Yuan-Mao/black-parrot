@@ -31,7 +31,10 @@ module from_rx_axis
     , output logic [cce_mem_msg_width_lp-1:0]   io_cmd_o
     , output logic                              io_cmd_v_o
     , input                                     io_cmd_yumi_i
+
+    , input logic  [cce_mem_msg_width_lp-1:0]   io_resp_i
     , input logic                               io_resp_v_i
+    , output logic                              io_resp_ready_o
 
     , output logic [1:0]                        rx_ext_state_o
 );
@@ -221,6 +224,7 @@ module from_rx_axis
      ,.yumi_i(io_resp_v_i)
      ,.count_o(rx_credit_count_lo)
      );
+  assign io_resp_ready_o = 1'b1;
   assign rx_credits_empty = (rx_credit_count_lo == '0);
 
 endmodule
