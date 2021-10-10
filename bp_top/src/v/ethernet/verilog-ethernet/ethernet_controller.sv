@@ -49,15 +49,6 @@ module ethernet_controller
   localparam max_credits_lp = 8;
   localparam eth_rx_state_width_lp = 3;
 
-  // Bit to deal with initial X->0 transition detection
-  bit clk125_lo;
-
-  bsg_counter_clock_downsample #(.width_p(2)) clock_downsampler
-   (.clk_i(clk250_i)
-    ,.reset_i(clk250_reset_i)
-    ,.val_i(2'b0) // divide by 2
-    ,.clk_r_o(clk125_lo)
-   );
 
 
   logic [els_lp-1:0]                       r_v_lo;
@@ -221,12 +212,10 @@ module ethernet_controller
             .AXIS_DATA_WIDTH(axis_data_width_lp)
             ) eth_mac_1g_rgmii_fifo
     (
-        // gtx_clk: 125MHZ; gtx_clk90: 90-degree phase shift
-        // gtx_rst should be sync with gtx_clk
+        // gtx_rst should be sync with gtx_clk250
         // logic_clk: bp clock
         // logic_rst should be sync with logic_clk
-        .gtx_clk(clk125_lo)
-        ,.gtx_clk250(clk250_i)
+         .gtx_clk250(clk250_i)
         ,.gtx_rst(clk250_reset_i)
         ,.logic_clk(bp_clk_i)
         ,.logic_rst(bp_reset_i)

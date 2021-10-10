@@ -60,7 +60,6 @@ module eth_mac_1g_rgmii_fifo #
     parameter RX_DROP_WHEN_FULL = RX_FRAME_FIFO
 )
 (
-    input  wire                       gtx_clk, // sync with gtx_clk250
     input  wire                       gtx_clk250,
     input  wire                       gtx_rst, // sync with gtx250
     input  wire                       logic_clk, // bp clk
@@ -146,6 +145,18 @@ reg [0:0] tx_sync_reg_2;
 reg [0:0] tx_sync_reg_3;
 reg [0:0] tx_sync_reg_4;
 `endif
+
+// Bit to deal with initial X->0 transition detection
+bit gtx_clk;
+
+// Need create_generated_clock to avoid adding a new clock domain
+bsg_counter_clock_downsample #(.width_p(2)) clock_downsampler
+ (.clk_i(gtx_clk250)
+  ,.reset_i(gtx_rst)
+  ,.val_i(2'b0) // divide by 2
+  ,.clk_r_o(gtx_clk)
+ );
+
 
 
 assign tx_error_underflow = tx_sync_reg_3[0] ^ tx_sync_reg_4[0];
