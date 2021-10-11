@@ -137,7 +137,7 @@ wire        rx_fifo_axis_tuser;
 // synchronize MAC status signals into logic clock domain
 wire tx_error_underflow_int;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [0:0] tx_sync_reg_1 = 1'b0;
 reg [0:0] tx_sync_reg_2 = 1'b0;
 reg [0:0] tx_sync_reg_3 = 1'b0;
@@ -187,7 +187,7 @@ end
 wire rx_error_bad_frame_int;
 wire rx_error_bad_fcs_int;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [1:0] rx_sync_reg_1 = 2'd0;
 reg [1:0] rx_sync_reg_2 = 2'd0;
 reg [1:0] rx_sync_reg_3 = 2'd0;
@@ -224,7 +224,7 @@ end
 
 wire [1:0] speed_int;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [1:0] speed_sync_reg_1 = 2'b10;
 reg [1:0] speed_sync_reg_2 = 2'b10;
 `else

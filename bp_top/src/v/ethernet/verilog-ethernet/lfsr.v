@@ -198,7 +198,7 @@ PRBS31      Fibonacci, inverted     31      31'h10000001    any
 
 */
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [LFSR_WIDTH-1:0] lfsr_mask_state[LFSR_WIDTH-1:0];
 reg [DATA_WIDTH-1:0] lfsr_mask_data[LFSR_WIDTH-1:0];
 reg [LFSR_WIDTH-1:0] output_mask_state[DATA_WIDTH-1:0];
@@ -210,7 +210,7 @@ reg [DATA_WIDTH-1:0] data_val = 0;
 
 integer i, j, k;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 initial begin
     // init bit masks
     for (i = 0; i < LFSR_WIDTH; i = i + 1) begin

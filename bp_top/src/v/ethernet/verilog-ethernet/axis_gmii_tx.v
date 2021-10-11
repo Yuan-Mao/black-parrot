@@ -108,7 +108,7 @@ localparam [2:0]
     STATE_WAIT_END = 3'd6,
     STATE_IFG = 3'd7;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [2:0] state_reg = STATE_IDLE;
 reg [7:0] s_tdata_reg = 8'd0;
 reg mii_odd_reg = 1'b0;
@@ -431,7 +431,7 @@ end
 
 always @(posedge clk) begin
     if (rst) begin
-`ifndef TARGET_FPGA
+`ifndef ALEX_STYLE
         s_tdata_reg <= 8'd0;
         mii_odd_reg <= 1'b0;
         mii_msn_reg <= 4'b0;

@@ -130,7 +130,7 @@ localparam [2:0]
     STATE_TRANSFER_IN = 3'd1,
     STATE_TRANSFER_OUT = 3'd2;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [2:0] state_reg = STATE_IDLE;
 reg [SEGMENT_COUNT_WIDTH-1:0] segment_count_reg = 0;
 reg [DATA_WIDTH-1:0] temp_tdata_reg = {DATA_WIDTH{1'b0}};
@@ -457,7 +457,7 @@ end
 
 always @(posedge clk) begin
     if (rst) begin
-`ifndef TARGET_FPGA
+`ifndef ALEX_STYLE
         segment_count_reg <= '0;
 
         temp_tdata_reg <= '0;
@@ -470,7 +470,7 @@ always @(posedge clk) begin
         state_reg <= STATE_IDLE;
         s_axis_tready_reg <= 1'b0;
     end else begin
-`ifndef TARGET_FPGA
+`ifndef ALEX_STYLE
         segment_count_reg <= segment_count_next;
 
         temp_tdata_reg <= temp_tdata_next;
@@ -484,7 +484,7 @@ always @(posedge clk) begin
 
         s_axis_tready_reg <= s_axis_tready_next;
     end
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
     segment_count_reg <= segment_count_next;
 
     temp_tdata_reg <= temp_tdata_next;
@@ -498,7 +498,7 @@ always @(posedge clk) begin
 end
 
 // output datapath logic
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [M_DATA_WIDTH-1:0] m_axis_tdata_reg  = {M_DATA_WIDTH{1'b0}};
 reg [M_KEEP_WIDTH-1:0] m_axis_tkeep_reg  = {M_KEEP_WIDTH{1'b0}};
 reg                    m_axis_tvalid_reg = 1'b0;

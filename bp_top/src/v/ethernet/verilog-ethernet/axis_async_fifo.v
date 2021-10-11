@@ -157,7 +157,7 @@ localparam WIDTH       = USER_OFFSET + (USER_ENABLE ? USER_WIDTH : 0);
 reg [ADDR_WIDTH:0] wr_ptr_temp;
 reg [ADDR_WIDTH:0] rd_ptr_temp;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 
 reg [ADDR_WIDTH:0] wr_ptr_reg = {ADDR_WIDTH+1{1'b0}};
 reg [ADDR_WIDTH:0] wr_ptr_cur_reg = {ADDR_WIDTH+1{1'b0}};

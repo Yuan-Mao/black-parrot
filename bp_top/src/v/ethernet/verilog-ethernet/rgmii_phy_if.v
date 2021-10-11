@@ -105,7 +105,7 @@ assign mac_gmii_rx_er = rgmii_rx_ctl_1 ^ rgmii_rx_ctl_2;
 
 // transmit
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg rgmii_tx_clk_1 = 1'b1;
 reg rgmii_tx_clk_2 = 1'b0;
 reg rgmii_tx_clk_rise = 1'b1;
@@ -171,7 +171,7 @@ always @(posedge clk) begin
         end
     end
 end
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [3:0] rgmii_txd_1 = 0;
 reg [3:0] rgmii_txd_2 = 0;
 reg rgmii_tx_ctl_1 = 1'b0;
@@ -243,7 +243,7 @@ bsg_link_oddr_phy #(.width_p(5))
     ,.clk_r_o(/* UNUSED */)
   );
 
-`ifdef TARGET_FPGA
+`ifdef PLATFORM_FPGA
 oddr #(
     .TARGET(TARGET),
     .IODDR_STYLE(IODDR_STYLE),
@@ -264,7 +264,7 @@ assign mac_gmii_tx_clk = clk;
 assign mac_gmii_tx_clk_en = gmii_clk_en;
 
 // reset sync
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [3:0] tx_rst_reg = 4'hf;
 reg [3:0] rx_rst_reg = 4'hf;
 `else

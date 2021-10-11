@@ -105,7 +105,7 @@ $(SIM_DIR)/run_samplesc: $(SAMPLE_COLLATERAL)
 
 # My additional options for Verilator:
 #VV_OPTS += --trace-fst --trace-structs --trace-depth 15
-VV_OPTS += +define+TARGET_FPGA
+VV_OPTS += +define+PLATFORM_FPGA
 
 COMMON_NBF_INPUTS := --ncpus=$(NCPUS)
 ifeq ($(UCODE_CFG), 1)

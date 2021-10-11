@@ -91,7 +91,7 @@ localparam [2:0]
     STATE_PAYLOAD = 3'd1,
     STATE_WAIT_LAST = 3'd2;
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [2:0] state_reg = STATE_IDLE;
 `else
 reg [2:0] state_reg;
@@ -103,7 +103,7 @@ reg reset_crc;
 reg update_crc;
 
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 
 reg mii_odd = 1'b0;
 reg mii_locked = 1'b0;
@@ -150,7 +150,7 @@ reg gmii_rx_er_d3;
 reg gmii_rx_er_d4;
 `endif
 
-`ifdef TARGET_FPGA
+`ifdef ALEX_STYLE
 reg [DATA_WIDTH-1:0] m_axis_tdata_reg = {DATA_WIDTH{1'b0}};
 reg m_axis_tvalid_reg = 1'b0;
 reg m_axis_tlast_reg = 1'b0;
@@ -367,7 +367,7 @@ always @(posedge clk) begin
     m_axis_tlast_reg <= m_axis_tlast_next;
     m_axis_tuser_reg <= m_axis_tuser_next;
 
-`ifndef TARGET_FPGA
+`ifndef ALEX_STYLE
     if (rst) begin
         ptp_ts_reg <= '0;
 
@@ -419,7 +419,7 @@ always @(posedge clk) begin
                 gmii_rx_er_d4 <= gmii_rx_er_d3;
             end
         end
-`ifndef TARGET_FPGA
+`ifndef ALEX_STYLE
     end
 `endif
 end
