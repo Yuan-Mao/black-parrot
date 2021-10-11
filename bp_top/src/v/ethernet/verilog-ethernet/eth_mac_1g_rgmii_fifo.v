@@ -61,7 +61,10 @@ module eth_mac_1g_rgmii_fifo #
 )
 (
     input  wire                       gtx_clk250,
-    input  wire                       gtx_rst, // sync with gtx250
+    // Both gtx_rst and gtx_rst_late are sync with gtx_clk250 and gtx_clk. gtx_rst_late is 
+    // for gtx_clk, which is generated after the deassertion of gtx_rst.
+    input  wire                       gtx_rst,
+    input  wire                       gtx_rst_late,
     input  wire                       logic_clk, // bp clk
     input  wire                       logic_rst, // bp reset. sync with bp clk
 
@@ -247,7 +250,7 @@ eth_mac_1g_rgmii #(
 eth_mac_1g_rgmii_inst (
     .gtx_clk(gtx_clk),
     .gtx_clk250(gtx_clk250),
-    .gtx_rst(gtx_rst),
+    .gtx_rst(gtx_rst_late),
     .tx_clk(tx_clk),
     .tx_rst(tx_rst),
     .rx_clk(rx_clk),

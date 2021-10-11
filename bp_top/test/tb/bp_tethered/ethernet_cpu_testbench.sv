@@ -79,6 +79,7 @@ module ethernet_cpu_testbench
   bit clk250_i;
   bit bp_clk_i;
   bit clk250_reset_i;
+  bit clk250_reset_late_i;
   bit bp_reset_i;
 
   `ifdef VERILATOR
@@ -131,6 +132,16 @@ module ethernet_cpu_testbench
   bsg_nonsynth_reset_gen
    #(.num_clocks_p(1)
      ,.reset_cycles_lo_p(0)
+     ,.reset_cycles_hi_p(20)
+     )
+   clk250_reset_late_gen
+    (.clk_i(clk250_i)
+     ,.async_reset_o(clk250_reset_late_i)
+     );
+
+  bsg_nonsynth_reset_gen
+   #(.num_clocks_p(1)
+     ,.reset_cycles_lo_p(0)
      ,.reset_cycles_hi_p(10)
      )
    bp_reset_gen
@@ -146,7 +157,7 @@ module ethernet_cpu_testbench
   logic [num_cce_p-1:0][l2_fill_width_p-1:0] dma_data_li;
   logic [num_cce_p-1:0] dma_data_v_li, dma_data_ready_and_lo;
 
-  assign reset_o = bp_reset_i | clk250_reset_i;
+  assign reset_o = bp_reset_i | clk250_reset_late_i;
 
   `declare_bp_bedrock_mem_if(paddr_width_p, cce_block_width_p, lce_id_width_p, lce_assoc_p, cce);
 
@@ -196,6 +207,7 @@ module ethernet_cpu_testbench
     (
         .clk250_i(clk250_i)
         ,.clk250_reset_i(clk250_reset_i)
+        ,.clk250_reset_late_i(clk250_reset_late_i)
         ,.bp_clk_i(bp_clk_i)
         ,.bp_reset_i(bp_reset_i)
 

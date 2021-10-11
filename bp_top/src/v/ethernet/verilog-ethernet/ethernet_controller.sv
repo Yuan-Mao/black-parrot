@@ -12,6 +12,7 @@ module ethernet_controller
 (
       input logic                                    clk250_i
     , input logic                                    clk250_reset_i // sync with clk250_i
+    , input logic                                    clk250_reset_late_i // sync with clk250_i
     , input logic                                    bp_clk_i
     , input logic                                    bp_reset_i // sync with bp_clk_i
 
@@ -217,6 +218,7 @@ module ethernet_controller
         // logic_rst should be sync with logic_clk
          .gtx_clk250(clk250_i)
         ,.gtx_rst(clk250_reset_i)
+        ,.gtx_rst_late(clk250_reset_late_i)
         ,.logic_clk(bp_clk_i)
         ,.logic_rst(bp_reset_i)
 

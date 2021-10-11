@@ -54,6 +54,7 @@ module ethernet_cpu_wrapper
   (
       input logic                              clk250_i
     , input logic                              clk250_reset_i // sync with clk250_i
+    , input logic                              clk250_reset_late_i // sync with clk250_i
     , input logic                              bp_clk_i
     , input logic                              bp_reset_i // sync with bp_clk_i
 
@@ -208,6 +209,7 @@ module ethernet_cpu_wrapper
   ethernet_controller ethernet_controller
   (.clk250_i(clk250_i)
    ,.clk250_reset_i(clk250_reset_i)
+   ,.clk250_reset_late_i(clk250_reset_late_i)
    ,.bp_clk_i(bp_clk_i)
    ,.bp_reset_i(bp_reset_i)
 
