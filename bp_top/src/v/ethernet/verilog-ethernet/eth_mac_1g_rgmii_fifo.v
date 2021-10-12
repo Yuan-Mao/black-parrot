@@ -66,6 +66,7 @@ module eth_mac_1g_rgmii_fifo #
     input  wire                       gtx_rst,
     input  wire                       logic_clk, // bp clk
     input  wire                       logic_rst, // bp reset. sync with bp clk
+    output wire                       gtx_rst_late,
 
     /*
      * AXI input
@@ -160,22 +161,23 @@ bsg_counter_clock_downsample #(.width_p(2)) clock_downsampler
  );
 
 
-reg gtx_rst_late;
+reg gtx_rst_late_r;
 reg [2:0] reset_hold_count_r;
 wire gtx_rst_late_n = (reset_hold_count_r != '0);
 
 always @(posedge gtx_clk250) begin
     if(gtx_rst) begin
         reset_hold_count_r <= '1;
-        gtx_rst_late <= 1'b1;
+        gtx_rst_late_r <= 1'b1;
     end
     else begin
-        gtx_rst_late <= gtx_rst_late_n;
+        gtx_rst_late_r <= gtx_rst_late_n;
         if(reset_hold_count_r != '0)
             reset_hold_count_r <= reset_hold_count_r - 1;
     end
 end
 
+assign gtx_rst_late = gtx_rst_late_r;
 
 assign tx_error_underflow = tx_sync_reg_3[0] ^ tx_sync_reg_4[0];
 
