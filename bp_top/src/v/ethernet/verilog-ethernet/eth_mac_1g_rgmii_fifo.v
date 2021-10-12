@@ -64,7 +64,6 @@ module eth_mac_1g_rgmii_fifo #
     // Both gtx_rst and gtx_rst_late are sync with gtx_clk250 and gtx_clk. gtx_rst_late is 
     // for gtx_clk, which is generated after the deassertion of gtx_rst.
     input  wire                       gtx_rst,
-    input  wire                       gtx_rst_late,
     input  wire                       logic_clk, // bp clk
     input  wire                       logic_rst, // bp reset. sync with bp clk
 
@@ -160,6 +159,22 @@ bsg_counter_clock_downsample #(.width_p(2)) clock_downsampler
   ,.clk_r_o(gtx_clk)
  );
 
+
+reg gtx_rst_late;
+reg [2:0] reset_hold_count_r;
+wire gtx_rst_late_n = (reset_hold_count_r != '0);
+
+always @(posedge gtx_clk250) begin
+    if(gtx_rst) begin
+        reset_hold_count_r <= '1;
+        gtx_rst_late <= 1'b1;
+    end
+    else begin
+        gtx_rst_late <= gtx_rst_late_n;
+        if(reset_hold_count_r != '0)
+            reset_hold_count_r <= reset_hold_count_r - 1;
+    end
+end
 
 
 assign tx_error_underflow = tx_sync_reg_3[0] ^ tx_sync_reg_4[0];
