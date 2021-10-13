@@ -352,9 +352,26 @@ initial begin
         end
     end
 
-    // for (i = 0; i < LFSR_WIDTH; i = i + 1) begin
-    //     $display("%b %b", lfsr_mask_state[i], lfsr_mask_data[i]);
-    // end
+/*    $display("wire [%0d:0][%0d:0] lfsr_mask_state = {", LFSR_WIDTH - 1, LFSR_WIDTH - 1);
+    for (i = 0; i < LFSR_WIDTH; i = i + 1) begin
+        $display("%b, ", lfsr_mask_state[i]);
+    end
+    $display("};\n");
+    $display("wire [%0d:0][%0d:0] lfsr_mask_data = {", LFSR_WIDTH - 1, DATA_WIDTH - 1);
+    for (i = 0; i < LFSR_WIDTH; i = i + 1) begin
+        $display("%b, ", lfsr_mask_data[i]);
+    end
+    $display("};\n");
+    $display("wire [%0d:0][%0d:0] output_mask_state = {", DATA_WIDTH - 1, LFSR_WIDTH - 1);
+    for (i = 0; i < DATA_WIDTH; i = i + 1) begin
+        $display("%b, ", output_mask_state[i]);
+    end
+    $display("};\n");
+    $display("wire [%0d:0][%0d:0] output_mask_data = {", DATA_WIDTH - 1, DATA_WIDTH - 1);
+    for (i = 0; i < DATA_WIDTH; i = i + 1) begin
+        $display("%b, ", output_mask_data[i]);
+    end
+    $display("};\n");*/
 end
 `else
 
