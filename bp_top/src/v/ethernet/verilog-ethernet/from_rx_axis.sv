@@ -114,7 +114,7 @@ module from_rx_axis
       ETH_RX_STATE_PAYLOAD: begin
         io_cmd_v_o = rx_axis_tvalid_i;
         bad_frame = (rx_axis_tuser_i & rx_axis_tvalid_i & rx_axis_tlast_i);
-        rx_beat_sent = io_cmd_yumi_i & ~bad_frame;
+        rx_beat_sent = ~bad_frame & rx_axis_tvalid_i & rx_axis_tready_o;
         if(rx_beat_sent & rx_axis_tlast_i)
           rx_state_n = ETH_RX_STATE_SIZE;
         else if(bad_frame)
